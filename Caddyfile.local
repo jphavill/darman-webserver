@@ -1,0 +1,7 @@
+:80 {
+    reverse_proxy frontend:80
+}
+
+:8000 {
+    reverse_proxy backend:8000
+}
