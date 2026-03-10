@@ -1,7 +1,12 @@
 www.jasonhavill.com {
+{
+    auto_https off
+}
+
+http://www.jasonhavill.com {
     reverse_proxy frontend:80
 }
 
-api.jasonhavill.com {
+http://api.jasonhavill.com {
     reverse_proxy backend:8000
 }

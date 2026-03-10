@@ -5,7 +5,9 @@ dist/
 __pycache__/
 .pytest_cache/
 .env
-.env.*
+.env.local
+.env.production
+.env.*.local
 .DS_Store
 *.log
 *.swp
