@@ -3,11 +3,13 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run --config /etc/cloudflared/config.yml --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
     networks:
       - public_web
     depends_on:
-      - caddy
+      - frontend
 
   caddy:
     image: caddy:2-alpine
@@ -31,6 +33,8 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     restart: unless-stopped
+    expose:
+      - "80"
     networks:
       - public_web
 
