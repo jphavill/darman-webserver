@@ -3,13 +3,20 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --config /etc/cloudflared/config.yml --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --config
+      - /etc/cloudflared/config.yml
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN}
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
     networks:
       - public_web
     depends_on:
-      - frontend
+      - caddy
 
   caddy:
     image: caddy:2-alpine
