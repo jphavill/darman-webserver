@@ -1,98 +1,117 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-
-interface Project {
-  title: string;
-  description: string;
-  tags: string[];
-  type: 'github' | 'cad' | 'printing';
-}
+import { Component, HostListener } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
+import { featuredMedia, physicalProjects, softwareProjects } from './data/projects.data';
+import { Project, ProjectOpenRequest } from './models/project.model';
+import { SiteHeaderComponent } from './components/site-header/site-header.component';
+import { FeaturedMediaComponent } from './components/featured-media/featured-media.component';
+import { ProjectSectionComponent } from './components/project-section/project-section.component';
+import { SiteFooterComponent } from './components/site-footer/site-footer.component';
+import { ProjectOverlayComponent } from './components/project-overlay/project-overlay.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="container">
-      <header>
-        <h1>Jason Havill</h1>
-        <p class="subtitle">Software Engineer & Maker</p>
-        <a href="https://github.com/jphavill" target="_blank" class="github-link">
-          <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-          </svg>
-          &#64;jphavill
-        </a>
-      </header>
-
-      <section>
-        <h2>Software Projects</h2>
-        <div class="projects-grid">
-          @for (project of githubProjects; track project.title) {
-            <div class="project-card">
-              <h3>{{ project.title }}</h3>
-              <p>{{ project.description }}</p>
-              <div class="tags">
-                @for (tag of project.tags; track tag) {
-                  <span class="tag github">{{ tag }}</span>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <section>
-        <h2>Physical Projects</h2>
-        <div class="projects-grid">
-          @for (project of cadProjects; track project.title) {
-            <div class="project-card">
-              <h3>{{ project.title }}</h3>
-              <p>{{ project.description }}</p>
-              <div class="tags">
-                @for (tag of project.tags; track tag) {
-                  <span class="tag printing">{{ tag }}</span>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <footer>
-        <p>Built with Angular & deployed via Cloudflare Tunnel</p>
-      </footer>
-    </div>
-  `
+  imports: [SiteHeaderComponent, FeaturedMediaComponent, ProjectSectionComponent, SiteFooterComponent, ProjectOverlayComponent],
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  githubProjects: Project[] = [
-    {
-      title: 'My First Project',
-      description: 'Add your first GitHub project here. Update the data in app.component.ts',
-      tags: ['Python', 'API'],
-      type: 'github'
-    },
-    {
-      title: 'Web Application',
-      description: 'Another project to showcase. Edit the component to add more.',
-      tags: ['TypeScript', 'Angular'],
-      type: 'github'
-    }
-  ];
+  constructor(private sanitizer: DomSanitizer) {}
 
-  cadProjects: Project[] = [
-    {
-      title: 'Custom 3D Print',
-      description: 'Add your 3D printing projects here. Include STL files or photos.',
-      tags: ['Fusion 360', 'Prusa', 'PLA'],
-      type: 'printing'
-    },
-    {
-      title: 'Mechanical Design',
-      description: 'Showcase your CAD assemblies and designs.',
-      tags: ['Onshape', 'SOLIDWORKS'],
-      type: 'cad'
+  readonly featuredMedia = featuredMedia;
+  readonly softwareProjects = softwareProjects;
+  readonly physicalProjects = physicalProjects;
+
+  overlayVisible = false;
+  isExpanded = false;
+  activeProject: Project | null = null;
+  activeProjectMarkdown: SafeHtml = '';
+  expandedStyle: Record<string, string> = {};
+
+  private originRect: DOMRect | null = null;
+  private openTrigger: HTMLElement | null = null;
+  private readonly animationMs = 320;
+
+  openProject(request: ProjectOpenRequest): void {
+    this.openTrigger = request.trigger;
+    this.originRect = request.trigger.getBoundingClientRect();
+    this.activeProject = request.project;
+    this.activeProjectMarkdown = this.markdownToHtml(request.project.longDescription);
+    this.overlayVisible = true;
+    this.isExpanded = false;
+    this.expandedStyle = this.rectToStyle(this.originRect, false);
+
+    document.body.classList.add('overlay-open');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.isExpanded = true;
+        this.expandedStyle = this.rectToStyle(this.getTargetRect(), true);
+      });
+    });
+  }
+
+  closeProject(): void {
+    if (!this.overlayVisible || !this.activeProject) {
+      return;
     }
-  ];
+
+    this.isExpanded = false;
+    this.expandedStyle = this.rectToStyle(this.originRect ?? this.getTargetRect(), true);
+
+    window.setTimeout(() => {
+      this.overlayVisible = false;
+      this.activeProject = null;
+      this.activeProjectMarkdown = '';
+      document.body.classList.remove('overlay-open');
+
+      if (this.openTrigger) {
+        this.openTrigger.focus();
+      }
+
+      this.openTrigger = null;
+      this.originRect = null;
+    }, this.animationMs);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.overlayVisible) {
+      this.closeProject();
+    }
+  }
+
+  private markdownToHtml(markdown: string): SafeHtml {
+    const html = marked.parse(markdown) as string;
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  private rectToStyle(rect: DOMRect, withTransition: boolean): Record<string, string> {
+    const mobile = window.innerWidth <= 768;
+
+    return {
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      borderRadius: mobile ? '0px' : withTransition ? '28px' : '22px',
+      transition: withTransition ? `top ${this.animationMs}ms cubic-bezier(0.2, 0.8, 0.2, 1), left ${this.animationMs}ms cubic-bezier(0.2, 0.8, 0.2, 1), width ${this.animationMs}ms cubic-bezier(0.2, 0.8, 0.2, 1), height ${this.animationMs}ms cubic-bezier(0.2, 0.8, 0.2, 1), border-radius ${this.animationMs}ms cubic-bezier(0.2, 0.8, 0.2, 1)` : 'none'
+    };
+  }
+
+  private getTargetRect(): DOMRect {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const mobile = vw <= 768;
+
+    if (mobile) {
+      return new DOMRect(0, 0, vw, vh);
+    }
+
+    const width = Math.min(860, vw - 48);
+    const height = Math.min(740, vh - 48);
+
+    return new DOMRect((vw - width) / 2, (vh - height) / 2, width, height);
+  }
 }

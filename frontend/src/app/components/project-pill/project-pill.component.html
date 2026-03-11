@@ -1,0 +1,14 @@
+<button class="project-pill" type="button" (click)="requestOpen($event)">
+  <div class="project-pill-media" [style.background-image]="project.thumbnail ? 'url(' + project.thumbnail + ')' : 'none'">
+    <div class="project-pill-overlay"></div>
+    <h3>{{ project.title }}</h3>
+  </div>
+
+  <p>{{ project.shortDescription }}</p>
+
+  <div class="tags">
+    @for (tag of project.tags; track tag) {
+      <span class="tag">{{ tag }}</span>
+    }
+  </div>
+</button>

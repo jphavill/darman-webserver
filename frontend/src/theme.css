@@ -1,0 +1,24 @@
+:root {
+  --bg-canvas: #121417;
+  --surface: #1a1e23;
+  --surface-soft: #232830;
+  --surface-raised: #2b313a;
+  --overlay: rgba(7, 10, 14, 0.72);
+
+  --text: #e8edf3;
+  --text-soft: #b5beca;
+
+  --accent: #8fb8e8;
+  --accent-strong: #b8d5f2;
+  --accent-soft: #2f3f54;
+
+  --border: #353c46;
+  --border-strong: #4a5664;
+
+  --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.26);
+  --shadow-medium: 0 16px 34px rgba(0, 0, 0, 0.34);
+  --shadow-large: 0 30px 70px rgba(0, 0, 0, 0.45);
+
+  --font-display: 'Bitter', 'Iowan Old Style', 'Palatino Linotype', serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+}

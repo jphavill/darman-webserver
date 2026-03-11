@@ -1,0 +1,9 @@
+<section>
+  <h2>{{ title }}</h2>
+
+  <div class="projects-grid">
+    @for (project of projects; track project.id) {
+      <app-project-pill [project]="project" (openProjectRequested)="forwardOpenRequest($event)"></app-project-pill>
+    }
+  </div>
+</section>

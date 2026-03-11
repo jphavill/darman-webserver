@@ -1,0 +1,65 @@
+.project-pill {
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  box-shadow: var(--shadow-soft);
+}
+
+.project-pill:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-medium);
+}
+
+.project-pill-media {
+  position: relative;
+  min-height: 160px;
+  background: linear-gradient(140deg, var(--accent-soft), var(--surface-raised));
+  background-size: cover;
+  background-position: center;
+}
+
+.project-pill-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(8, 12, 16, 0.08) 30%, var(--surface) 95%);
+}
+
+.project-pill h3 {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1.1rem;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.project-pill p {
+  color: var(--text-soft);
+  font-size: 0.93rem;
+  margin: 0.95rem 1rem 0.75rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.tag {
+  background: var(--surface-soft);
+  color: var(--accent-strong);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

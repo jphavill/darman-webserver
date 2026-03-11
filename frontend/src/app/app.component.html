@@ -1,0 +1,28 @@
+<div class="container">
+  <app-site-header></app-site-header>
+
+  <app-featured-media [media]="featuredMedia"></app-featured-media>
+
+  <app-project-section
+    title="Software Projects"
+    [projects]="softwareProjects"
+    (openProjectRequested)="openProject($event)"
+  ></app-project-section>
+
+  <app-project-section
+    title="Physical Projects"
+    [projects]="physicalProjects"
+    (openProjectRequested)="openProject($event)"
+  ></app-project-section>
+
+  <app-site-footer></app-site-footer>
+
+  <app-project-overlay
+    [activeProject]="activeProject"
+    [overlayVisible]="overlayVisible"
+    [isExpanded]="isExpanded"
+    [expandedStyle]="expandedStyle"
+    [activeProjectMarkdown]="activeProjectMarkdown"
+    (closeRequested)="closeProject()"
+  ></app-project-overlay>
+</div>
