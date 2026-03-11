@@ -71,6 +71,11 @@ Example homepage image URL currently used by the Angular app:
 3. The script creates an optimized WebP in `./media` with a content-hashed name.
 4. Copy the printed URL (`/media/<name>.webp`) into the frontend component.
 
+- Media is not synced through github. To transfer to the server use scp
+```bash
+scp media/{filename}.webp jh://home/jphavill/dockerStuff/darman-webserver/media/
+```
+
 ### Hashing + resizing workflow
 
 `scripts/prepare-media.sh` does this automatically:
@@ -95,15 +100,13 @@ docker compose -f docker-compose.local.yml up -d
 
 This starts:
 - Frontend (Angular app served via nginx)
-- Backend (Python/FastAPI)
+- Backend (Python/FastAPI, with `--reload` in local mode)
 - PostgreSQL database
 - Caddy reverse proxy (ports 80/443)
 
 The Cloudflare Tunnel token is **not required** in local mode.
 
 Access at: http://localhost
-
-If you run only the Angular dev server (`npm start` inside `frontend`), media URLs (`/media/*`) are proxied to `http://localhost` via `frontend/proxy.conf.json`. Keep the local Caddy stack running so those image requests resolve.
 
 ### Production Mode
 
@@ -116,24 +119,6 @@ docker compose up -d
 This includes the `cloudflared` service which connects to Cloudflare Tunnel.
 
 **Required:** Set `CLOUDFLARE_TUNNEL_TOKEN` in your `.env` file before running.
-
-## Rapid Angular Development
-
-### Local Angular Dev Server
-
-The fastest way to iterate on Angular changes without Docker:
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-This runs the Angular dev server on http://localhost:4200 with hot module replacement (HMR). Changes save and reload instantly.
-
-**Note:** The backend/DB won't be available in this mode. The Angular app will load but API calls will fail unless you also run the backend separately or proxy to a staging environment.
-
-For full Docker-based development, see [frontend/README.md](./frontend/README.md).
 
 ## Common Commands
 
@@ -150,13 +135,42 @@ docker compose -f docker-compose.local.yml down
 # Rebuild after code changes
 docker compose -f docker-compose.local.yml up -d --build
 
+# Bring stack up without rebuilding
+docker compose -f docker-compose.local.yml up -d
+
+# Rebuild only backend
+docker compose -f docker-compose.local.yml up -d --build backend
+
 # Rebuild only frontend
-docker compose -f docker-compose.local.yml build frontend
-docker compose -f docker-compose.local.yml up -d frontend
+docker compose -f docker-compose.local.yml up -d --build frontend
 
 # View running containers
 docker ps
 
 # Shell into a container
 docker exec -it <container-name> sh
+```
+
+## Makefile Shortcuts
+
+Use these shortcuts for the same local Docker workflows:
+
+```bash
+# Start local stack
+make up
+
+# View logs
+make logs
+
+# Stop local stack
+make down
+
+# Full rebuild
+make rebuild
+
+# Rebuild backend only
+make rebuild-backend
+
+# Rebuild frontend only
+make rebuild-frontend
 ```

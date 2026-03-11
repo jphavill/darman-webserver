@@ -27,7 +27,9 @@ services:
       - public_web
 
   backend:
-    image: python:3.11-slim
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
     environment:
@@ -37,8 +39,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - ./backend:/app
-    working_dir: /app
-    command: sh -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - public_web
     depends_on:
