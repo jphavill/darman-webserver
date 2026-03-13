@@ -12,7 +12,7 @@ npm start
 
 The app will be available at http://localhost:4200 with hot module replacement (HMR). Changes save and reload instantly.
 
-**Note:** The backend and database are not available in this mode. API calls will fail unless you also run the backend separately or proxy to a staging environment.
+**Note:** Run the local Docker stack as well if you want `/api` requests to resolve through the proxy config.
 
 ## Building for Production
 
@@ -23,6 +23,25 @@ npm run build
 ```
 
 Output is written to `frontend/dist/resume-website/browser/`.
+
+## Sprint Times Grid
+
+The sprint times table uses AG Grid Community and loads rows from:
+
+- `GET /api/v1/sprints` for paginated/filterable/sortable rows
+
+Frontend files:
+
+- `src/app/components/sprint-times-grid/sprint-times-grid.component.ts`
+- `src/app/services/sprint-api.service.ts`
+
+## Routes
+
+- `/` main portfolio page
+- `/sprint` sprint leaderboard page
+- `/photogallery` photo gallery page
+
+A shared top navigation component (`src/app/components/top-nav/`) is rendered across pages.
 
 ## Running Tests
 

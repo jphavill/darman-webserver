@@ -16,6 +16,8 @@ A Docker-based webserver stack with Angular frontend, Python backend, PostgreSQL
    ```
 
 2. Edit `.env` with your desired values:
+   - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` - PostgreSQL credentials/database name
+   - `ADMIN_API_TOKEN` - Bearer token required for sprint data inserts (`POST /api/v1/sprints`)
    - `CLOUDFLARE_TUNNEL_TOKEN` - Required for production only (Cloudflare Zero Trust tunnel token)
 
 3. Create a local media folder for images:
@@ -150,6 +152,44 @@ docker ps
 # Shell into a container
 docker exec -it <container-name> sh
 ```
+
+## Database Migrations (Alembic)
+
+Alembic files live in `backend/alembic/` and migration revisions are in `backend/alembic/versions/`.
+
+```bash
+# Preferred in Docker local mode
+make migrate
+
+# Or directly
+docker compose -f docker-compose.local.yml exec backend alembic -c alembic.ini upgrade head
+
+# Host-based option (uses your local .venv)
+# postgres is exposed on localhost:5432 in docker-compose.local.yml
+source .venv/bin/activate
+
+# Apply all migrations
+alembic -c backend/alembic.ini upgrade head
+
+# Create a new migration after model changes
+alembic -c backend/alembic.ini revision --autogenerate -m "describe change"
+```
+
+If you see `connection to server at "localhost", port 5432 failed: Connection refused`, it means your host process cannot reach Postgres yet. In local Docker mode, prefer running migrations via `make migrate` (inside the backend container).
+
+## Sprint Times API
+
+- `POST /api/v1/sprints` (auth required): insert a sprint record with `name`, `sprint_time_ms`, `sprint_date`, `location`
+- `GET /api/v1/sprints`: list sprint records with filtering, ordering, pagination
+- `GET /api/v1/sprints/best`: list each person's fastest sprint entry
+
+Auth for inserts uses a bearer token:
+
+```http
+Authorization: Bearer <ADMIN_API_TOKEN>
+```
+
+In local Docker mode, if `ADMIN_API_TOKEN` is omitted, backend defaults to `local-dev-token-change-me`.
 
 ## Makefile Shortcuts
 

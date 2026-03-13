@@ -1,0 +1,16 @@
+<ag-grid-angular
+  class="ag-theme-quartz sprint-grid"
+  [columnDefs]="columnDefs"
+  [defaultColDef]="defaultColDef"
+  rowModelType="infinite"
+  [cacheBlockSize]="pageSize"
+  [pagination]="true"
+  [paginationPageSize]="pageSize"
+  [maxBlocksInCache]="2"
+  [animateRows]="true"
+  (gridReady)="onGridReady($event)"
+></ag-grid-angular>
+
+@if (errorMessage) {
+  <p class="error-message">{{ errorMessage }}</p>
+}

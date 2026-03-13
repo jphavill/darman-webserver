@@ -1,0 +1,53 @@
+.sprint-grid {
+  width: 100%;
+  height: 560px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.sprint-grid.ag-theme-quartz {
+  --ag-font-family: var(--font-body);
+  --ag-font-size: 0.95rem;
+
+  --ag-background-color: #171d25;
+  --ag-foreground-color: var(--text);
+  --ag-border-color: var(--border);
+  --ag-secondary-border-color: rgba(255, 255, 255, 0.07);
+
+  --ag-header-background-color: #202a36;
+  --ag-header-foreground-color: var(--accent-strong);
+  --ag-header-column-separator-color: rgba(255, 255, 255, 0.1);
+
+  --ag-odd-row-background-color: rgba(255, 255, 255, 0.015);
+  --ag-row-hover-color: rgba(143, 184, 232, 0.16);
+  --ag-selected-row-background-color: rgba(143, 184, 232, 0.22);
+
+  --ag-input-background-color: #121820;
+  --ag-input-border-color: var(--border-strong);
+  --ag-input-focus-border-color: var(--accent);
+  --ag-input-text-color: var(--text);
+
+  --ag-icon-color: var(--text-soft);
+  --ag-icon-font-color: var(--text-soft);
+
+  --ag-control-panel-background-color: #1c2530;
+  --ag-subheader-background-color: #1c2530;
+  --ag-modal-overlay-background-color: rgba(7, 10, 14, 0.64);
+
+  --ag-range-selection-background-color: rgba(143, 184, 232, 0.16);
+  --ag-cell-horizontal-border: 1px solid rgba(255, 255, 255, 0.04);
+  --ag-wrapper-border-radius: 12px;
+}
+
+.error-message {
+  margin-top: 0.9rem;
+  color: #ffbab0;
+}
+
+@media (max-width: 700px) {
+  .sprint-grid {
+    height: 460px;
+  }
+}

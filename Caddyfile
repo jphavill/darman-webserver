@@ -3,7 +3,7 @@
 }
 
 jasonhavill.com {
-    redir https://www.jasonhavill.com{uri}
+    redir https://www.jasonhavill.com{uri} 300
 }
 
 http://www.jasonhavill.com {
