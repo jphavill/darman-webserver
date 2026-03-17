@@ -77,7 +77,7 @@ class Photo(Base):
     caption: Mapped[str] = mapped_column(Text, nullable=False)
     thumb_url: Mapped[str] = mapped_column(String(400), nullable=False)
     full_url: Mapped[str] = mapped_column(String(400), nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    captured_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),

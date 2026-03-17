@@ -8,7 +8,7 @@ from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow
 
 def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
     query = db.query(Photo).filter(Photo.is_published.is_(True))
-    query = query.order_by(Photo.sort_order.asc(), Photo.created_at.desc(), Photo.id.asc())
+    query = query.order_by(Photo.captured_at.desc(), Photo.created_at.desc(), Photo.id.asc())
 
     total = query.count()
     records = query.offset(offset).limit(limit).all()
@@ -20,7 +20,7 @@ def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
             caption=record.caption,
             thumb_url=record.thumb_url,
             full_url=record.full_url,
-            sort_order=record.sort_order,
+            captured_at=record.captured_at,
             is_published=record.is_published,
             created_at=record.created_at,
             updated_at=record.updated_at,
@@ -39,7 +39,7 @@ def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoL
             caption=item.caption.strip(),
             thumb_url=item.thumb_url.strip(),
             full_url=item.full_url.strip(),
-            sort_order=item.sort_order,
+            captured_at=item.captured_at,
             is_published=item.is_published,
         )
         statement = statement.on_conflict_do_update(
@@ -49,7 +49,7 @@ def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoL
                 "caption": item.caption.strip(),
                 "thumb_url": item.thumb_url.strip(),
                 "full_url": item.full_url.strip(),
-                "sort_order": item.sort_order,
+                "captured_at": item.captured_at,
                 "is_published": item.is_published,
                 "updated_at": func.now(),
             },

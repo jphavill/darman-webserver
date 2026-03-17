@@ -4,11 +4,24 @@ This folder contains scripts for preparing gallery images and syncing metadata t
 
 ## Scripts
 
+- `generate-gallery-metadata.py`
+  - Scans a directory of photos and creates a metadata CSV in that same directory.
+  - Creates rows with fields from `metadata.template.csv`.
+  - Leaves `id`, `alt_text`, and `caption` empty.
+  - Sets `is_published` to `true`.
+  - Sorts rows by `kMDItemContentCreationDate` metadata (newest first).
+  - Writes `captured_at` as an ISO-8601 timestamp with timezone.
+
+- `migrate-metadata-sort-to-captured.py`
+  - One-time migration for older metadata CSV files that still use `sort_order`.
+  - Replaces `sort_order` with `captured_at` using each file's `kMDItemContentCreationDate` metadata.
+  - Updates the CSV in place and writes a `.bak` backup by default.
+
 - `prepare-gallery-batch.py`
   - Processes many images from one directory.
   - Generates two variants per image:
-    - thumbnail (for gallery grid)
-    - full-size (for modal/fullscreen)
+    - thumbnail (for gallery grid, resized by `--thumb-width`, default quality `82`)
+    - full-size (for modal/fullscreen, keeps original resolution, default quality `95`)
   - Writes an API manifest JSON and a resolved metadata CSV (with UUIDs).
 
 - `upsert-gallery-manifest.sh`
@@ -21,14 +34,37 @@ This folder contains scripts for preparing gallery images and syncing metadata t
 - Running API (`/api/v1/photos/batch-upsert`)
 - Valid `ADMIN_API_TOKEN`
 
-## 1) Prepare metadata CSV
+## 1 Prepare metadata CSV
+
+Option A: generate metadata automatically from a photo directory:
+
+```bash
+./scripts/generate-gallery-metadata.py \
+  --input-dir ~/Pictures/gallery-upload
+```
+
+This creates `~/Pictures/gallery-upload/metadata.csv`.
+
+Optional flags:
+
+- `--output-name metadata.csv` to change the output filename (still created in `--input-dir`)
+
+Option B: create CSV manually.
+
+Option C: migrate an older CSV from `sort_order` to `captured_at`:
+
+```bash
+./scripts/migrate-metadata-sort-to-captured.py \
+  --input-dir ~/Pictures/gallery-upload \
+  --metadata ~/Pictures/gallery-upload/metadata.csv
+```
 
 Create a CSV file (for example `metadata.csv`) with this header:
 
 ```csv
-filename,id,alt_text,caption,sort_order,is_published
-IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,10,true
-IMG_1002.JPG,,Workbench detail,New fixture test fit,20,true
+filename,id,alt_text,caption,captured_at,is_published
+IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,2026-03-16T09:45:00-07:00,true
+IMG_1002.JPG,,Workbench detail,New fixture test fit,2026-03-15T18:22:00-07:00,true
 ```
 
 Notes:
@@ -37,7 +73,7 @@ Notes:
 - `id` may be empty on first run. The script will generate UUIDs.
 - Keep the generated IDs for future updates so the same logical photo is updated.
 
-## 2) Generate thumbnail + full images
+## 2 Generate thumbnail + full images
 
 Run from repo root:
 
@@ -46,7 +82,8 @@ Run from repo root:
   --input-dir ~/Pictures/gallery-upload \
   --metadata ~/Pictures/gallery-upload/metadata.csv \
   --thumb-width 640 \
-  --full-width 2560 \
+  --thumb-quality 82 \
+  --full-quality 95 \
   --manifest-out ./media/gallery-manifest.json
 ```
 
@@ -54,9 +91,9 @@ Outputs:
 
 - Processed images in `media/gallery/`
 - API payload in `media/gallery-manifest.json`
-- Resolved CSV (defaults to `metadata.resolved.csv`) with UUID IDs filled in
+- Resolved CSV (defaults to `metadata.resolved.csv`) with UUID IDs filled in (merged/upserted if file already exists)
 
-## 3) Copy images to server media folder
+## 3 Copy images to server media folder
 
 Example:
 
@@ -64,7 +101,7 @@ Example:
 scp media/gallery/* jh://home/jphavill/dockerStuff/darman-webserver/media/gallery/
 ```
 
-## 4) Upsert photo metadata into Postgres via API
+## 4 Upsert photo metadata into Postgres via API
 
 ```bash
 ./scripts/upsert-gallery-manifest.sh \
@@ -75,7 +112,7 @@ scp media/gallery/* jh://home/jphavill/dockerStuff/darman-webserver/media/galler
 
 ## Typical update workflow
 
-1. Edit metadata CSV (captions/order/published flag).
+1. Edit metadata CSV (captions/captured date/published flag).
 2. Re-run `prepare-gallery-batch.py`.
 3. Upload new/updated files with `scp`.
 4. Run `upsert-gallery-manifest.sh`.

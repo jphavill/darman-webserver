@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from schemas import PhotoBatchUpsertRequest, PhotoUpsertItem
@@ -6,6 +7,8 @@ from services.photos import batch_upsert_photos, list_photos
 
 def test_batch_upsert_creates_and_updates_photo(db_session):
     photo_id = uuid4()
+    old_capture = datetime.now(timezone.utc) - timedelta(days=2)
+    new_capture = datetime.now(timezone.utc) - timedelta(days=1)
 
     first = batch_upsert_photos(
         db=db_session,
@@ -17,7 +20,7 @@ def test_batch_upsert_creates_and_updates_photo(db_session):
                     caption="First caption",
                     thumb_url="/media/gallery/workshop-thumb.webp",
                     full_url="/media/gallery/workshop-full.webp",
-                    sort_order=20,
+                    captured_at=old_capture,
                     is_published=True,
                 )
             ]
@@ -37,7 +40,7 @@ def test_batch_upsert_creates_and_updates_photo(db_session):
                     caption="Updated caption",
                     thumb_url="/media/gallery/workshop-thumb-v2.webp",
                     full_url="/media/gallery/workshop-full-v2.webp",
-                    sort_order=5,
+                    captured_at=new_capture,
                     is_published=True,
                 )
             ]
@@ -46,10 +49,11 @@ def test_batch_upsert_creates_and_updates_photo(db_session):
 
     assert second.total == 1
     assert second.rows[0].caption == "Updated caption"
-    assert second.rows[0].sort_order == 5
+    assert second.rows[0].captured_at == new_capture
 
 
 def test_list_photos_only_returns_published_sorted(db_session):
+    now = datetime.now(timezone.utc)
     batch_upsert_photos(
         db=db_session,
         payload=PhotoBatchUpsertRequest(
@@ -60,7 +64,7 @@ def test_list_photos_only_returns_published_sorted(db_session):
                     caption="Visible second",
                     thumb_url="/media/gallery/second-thumb.webp",
                     full_url="/media/gallery/second-full.webp",
-                    sort_order=20,
+                    captured_at=now - timedelta(days=2),
                     is_published=True,
                 ),
                 PhotoUpsertItem(
@@ -69,7 +73,7 @@ def test_list_photos_only_returns_published_sorted(db_session):
                     caption="Visible first",
                     thumb_url="/media/gallery/first-thumb.webp",
                     full_url="/media/gallery/first-full.webp",
-                    sort_order=10,
+                    captured_at=now - timedelta(days=1),
                     is_published=True,
                 ),
                 PhotoUpsertItem(
@@ -78,7 +82,7 @@ def test_list_photos_only_returns_published_sorted(db_session):
                     caption="Not visible",
                     thumb_url="/media/gallery/hidden-thumb.webp",
                     full_url="/media/gallery/hidden-full.webp",
-                    sort_order=0,
+                    captured_at=now,
                     is_published=False,
                 ),
             ]

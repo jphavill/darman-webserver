@@ -10,10 +10,13 @@ import sys
 import tempfile
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".tif", ".tiff", ".heic"}
+METADATA_FIELDNAMES = ["filename", "id", "alt_text", "caption", "captured_at", "is_published"]
 
 
 @dataclass
@@ -22,16 +25,19 @@ class MetadataRow:
     photo_id: str
     alt_text: str
     caption: str
-    sort_order: int
+    captured_at: datetime
     is_published: bool
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate thumbnail/full gallery images for all files listed in a metadata CSV.")
+    parser = argparse.ArgumentParser(
+        description="Generate gallery images for all files listed in a metadata CSV (resized thumbnails + full-size originals)."
+    )
     parser.add_argument("--input-dir", required=True, help="Directory containing source photos")
-    parser.add_argument("--metadata", required=True, help="CSV with filename,id,alt_text,caption,sort_order,is_published")
+    parser.add_argument("--metadata", required=True, help="CSV with filename,id,alt_text,caption,captured_at,is_published")
     parser.add_argument("--thumb-width", type=int, default=640, help="Max width for thumbnail images")
-    parser.add_argument("--full-width", type=int, default=2560, help="Max width for full images")
+    parser.add_argument("--thumb-quality", type=int, default=82, help="WebP quality for thumbnails (0-100)")
+    parser.add_argument("--full-quality", type=int, default=95, help="WebP quality for full-size images (0-100)")
     parser.add_argument("--media-dir", default="media/gallery", help="Output media directory")
     parser.add_argument("--manifest-out", default="media/gallery-manifest.json", help="Output JSON manifest for API upsert")
     parser.add_argument(
@@ -60,6 +66,22 @@ def parse_bool(value: str) -> bool:
     return normalized in {"1", "true", "yes", "y"}
 
 
+def parse_captured_at(value: str, filename: str) -> datetime:
+    candidate = value.strip()
+    if not candidate:
+        raise ValueError(f"Row for {filename} is missing captured_at")
+
+    normalized = candidate.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise ValueError(f"Row for {filename} has invalid captured_at: {candidate}") from exc
+
+    if parsed.tzinfo is None:
+        raise ValueError(f"Row for {filename} captured_at must include timezone offset: {candidate}")
+    return parsed
+
+
 def read_metadata(metadata_path: Path) -> list[MetadataRow]:
     rows: list[MetadataRow] = []
     with metadata_path.open("r", encoding="utf-8", newline="") as handle:
@@ -81,8 +103,8 @@ def read_metadata(metadata_path: Path) -> list[MetadataRow]:
             raw_id = (source_row.get("id") or "").strip()
             photo_id = str(uuid.UUID(raw_id)) if raw_id else str(uuid.uuid4())
 
-            raw_sort = (source_row.get("sort_order") or "0").strip()
-            sort_order = int(raw_sort) if raw_sort else 0
+            raw_captured_at = (source_row.get("captured_at") or "").strip()
+            captured_at = parse_captured_at(raw_captured_at, filename)
 
             raw_published = (source_row.get("is_published") or "true").strip()
             is_published = parse_bool(raw_published)
@@ -93,7 +115,7 @@ def read_metadata(metadata_path: Path) -> list[MetadataRow]:
                     photo_id=photo_id,
                     alt_text=alt_text,
                     caption=caption,
-                    sort_order=sort_order,
+                    captured_at=captured_at,
                     is_published=is_published,
                 )
             )
@@ -110,7 +132,16 @@ def run_command(command: list[str]) -> None:
         raise RuntimeError(f"Command failed: {' '.join(command)}\n{completed.stderr}")
 
 
-def process_image(source_path: Path, output_path: Path, width: int, magick_path: str | None, has_docker: bool) -> None:
+def process_image(
+    source_path: Path,
+    output_path: Path,
+    width: Optional[int],
+    quality: int,
+    magick_path: Optional[str],
+    has_docker: bool,
+) -> None:
+    resize_args = ["-resize", f"{width}x>"] if width is not None else []
+
     if magick_path:
         run_command(
             [
@@ -118,10 +149,9 @@ def process_image(source_path: Path, output_path: Path, width: int, magick_path:
                 str(source_path),
                 "-auto-orient",
                 "-strip",
-                "-resize",
-                f"{width}x>",
+                *resize_args,
                 "-quality",
-                "82",
+                str(quality),
                 str(output_path),
             ]
         )
@@ -143,10 +173,9 @@ def process_image(source_path: Path, output_path: Path, width: int, magick_path:
             f"/input/{source_path.name}",
             "-auto-orient",
             "-strip",
-            "-resize",
-            f"{width}x>",
+            *resize_args,
             "-quality",
-            "82",
+            str(quality),
             f"/output/{output_path.name}",
         ]
     )
@@ -164,20 +193,67 @@ def hash_file(path: Path) -> str:
 
 
 def write_resolved_metadata(path: Path, rows: list[MetadataRow]) -> None:
+    merged: dict[str, MetadataRow] = {}
+    order: list[str] = []
+
+    def row_key(filename: str, photo_id: str) -> str:
+        if photo_id.strip():
+            return f"id:{photo_id.strip()}"
+        return f"filename:{filename.strip().lower()}"
+
+    if path.exists():
+        with path.open("r", encoding="utf-8", newline="") as existing_handle:
+            reader = csv.DictReader(existing_handle)
+            missing = [column for column in METADATA_FIELDNAMES if column not in (reader.fieldnames or [])]
+            if missing:
+                raise ValueError(f"Resolved metadata CSV missing required columns: {', '.join(missing)}")
+
+            for source_row in reader:
+                filename = (source_row.get("filename") or "").strip()
+                if not filename:
+                    continue
+
+                photo_id = (source_row.get("id") or "").strip()
+                alt_text = (source_row.get("alt_text") or "").strip()
+                caption = (source_row.get("caption") or "").strip()
+                raw_captured_at = (source_row.get("captured_at") or "").strip()
+                captured_at = parse_captured_at(raw_captured_at, filename)
+                raw_published = (source_row.get("is_published") or "true").strip()
+                is_published = parse_bool(raw_published)
+
+                key = row_key(filename=filename, photo_id=photo_id)
+                if key not in merged:
+                    order.append(key)
+                merged[key] = MetadataRow(
+                    filename=filename,
+                    photo_id=photo_id,
+                    alt_text=alt_text,
+                    caption=caption,
+                    captured_at=captured_at,
+                    is_published=is_published,
+                )
+
+    for row in rows:
+        key = row_key(filename=row.filename, photo_id=row.photo_id)
+        if key not in merged:
+            order.append(key)
+        merged[key] = row
+
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["filename", "id", "alt_text", "caption", "sort_order", "is_published"],
+            fieldnames=METADATA_FIELDNAMES,
         )
         writer.writeheader()
-        for row in rows:
+        for key in order:
+            row = merged[key]
             writer.writerow(
                 {
                     "filename": row.filename,
                     "id": row.photo_id,
                     "alt_text": row.alt_text,
                     "caption": row.caption,
-                    "sort_order": row.sort_order,
+                    "captured_at": row.captured_at.isoformat(),
                     "is_published": "true" if row.is_published else "false",
                 }
             )
@@ -195,6 +271,10 @@ def main() -> int:
         raise RuntimeError(f"Input directory does not exist: {input_dir}")
     if not metadata_path.exists():
         raise RuntimeError(f"Metadata CSV does not exist: {metadata_path}")
+    if not 0 <= args.thumb_quality <= 100:
+        raise RuntimeError(f"--thumb-quality must be between 0 and 100: {args.thumb_quality}")
+    if not 0 <= args.full_quality <= 100:
+        raise RuntimeError(f"--full-quality must be between 0 and 100: {args.full_quality}")
 
     media_dir.mkdir(parents=True, exist_ok=True)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -220,8 +300,22 @@ def main() -> int:
             thumb_tmp = tmp_dir / f"{slug}-{id_prefix}-thumb.webp"
             full_tmp = tmp_dir / f"{slug}-{id_prefix}-full.webp"
 
-            process_image(source_path=source_path, output_path=thumb_tmp, width=args.thumb_width, magick_path=magick_path, has_docker=has_docker)
-            process_image(source_path=source_path, output_path=full_tmp, width=args.full_width, magick_path=magick_path, has_docker=has_docker)
+            process_image(
+                source_path=source_path,
+                output_path=thumb_tmp,
+                width=args.thumb_width,
+                quality=args.thumb_quality,
+                magick_path=magick_path,
+                has_docker=has_docker,
+            )
+            process_image(
+                source_path=source_path,
+                output_path=full_tmp,
+                width=None,
+                quality=args.full_quality,
+                magick_path=magick_path,
+                has_docker=has_docker,
+            )
 
             thumb_hash = hash_file(thumb_tmp)
             full_hash = hash_file(full_tmp)
@@ -242,7 +336,7 @@ def main() -> int:
                     "caption": row.caption,
                     "thumb_url": f"/media/gallery/{thumb_name}",
                     "full_url": f"/media/gallery/{full_name}",
-                    "sort_order": row.sort_order,
+                    "captured_at": row.captured_at.isoformat(),
                     "is_published": row.is_published,
                 }
             )

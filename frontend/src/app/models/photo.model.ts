@@ -4,7 +4,7 @@ export interface Photo {
   caption: string;
   thumb_url: string;
   full_url: string;
-  sort_order: number;
+  captured_at: string;
   is_published: boolean;
   created_at: string;
   updated_at: string;

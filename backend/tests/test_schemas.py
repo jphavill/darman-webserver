@@ -52,7 +52,7 @@ def test_photo_batch_upsert_request_accepts_valid_payload():
                 "caption": "Blue hour",
                 "thumb_url": "/media/gallery/bridge-thumb.webp",
                 "full_url": "/media/gallery/bridge-full.webp",
-                "sort_order": 0,
+                "captured_at": datetime.now().astimezone().isoformat(),
                 "is_published": True,
             }
         ]

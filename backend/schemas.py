@@ -46,7 +46,7 @@ class PhotoUpsertItem(BaseModel):
     caption: str = Field(min_length=1)
     thumb_url: str = Field(min_length=1, max_length=400)
     full_url: str = Field(min_length=1, max_length=400)
-    sort_order: int = Field(default=0)
+    captured_at: datetime
     is_published: bool = Field(default=True)
 
 
@@ -60,7 +60,7 @@ class PhotoRow(BaseModel):
     caption: str
     thumb_url: str
     full_url: str
-    sort_order: int
+    captured_at: datetime
     is_published: bool
     created_at: datetime
     updated_at: datetime

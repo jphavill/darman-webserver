@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from uuid import uuid4
 
@@ -57,7 +57,7 @@ def test_photo_model_persists(db_session):
         caption="Cloud cover breaking",
         thumb_url="/media/gallery/ridge-thumb.webp",
         full_url="/media/gallery/ridge-full.webp",
-        sort_order=12,
+        captured_at=datetime.now(timezone.utc),
         is_published=True,
     )
 

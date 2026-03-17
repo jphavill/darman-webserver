@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 
 
@@ -13,7 +14,7 @@ def test_batch_upsert_photos_requires_auth(client, monkeypatch):
                     "caption": "Evening light",
                     "thumb_url": "/media/gallery/bench-thumb.webp",
                     "full_url": "/media/gallery/bench-full.webp",
-                    "sort_order": 0,
+                    "captured_at": datetime.now(timezone.utc).isoformat(),
                     "is_published": True,
                 }
             ]
@@ -39,7 +40,7 @@ def test_batch_upsert_and_list_photos(client, monkeypatch):
                     "caption": "Morning fog",
                     "thumb_url": "/media/gallery/fog-thumb.webp",
                     "full_url": "/media/gallery/fog-full.webp",
-                    "sort_order": 3,
+                    "captured_at": "2026-03-16T08:15:00+00:00",
                     "is_published": True,
                 },
                 {
@@ -48,7 +49,7 @@ def test_batch_upsert_and_list_photos(client, monkeypatch):
                     "caption": "Draft photo",
                     "thumb_url": "/media/gallery/draft-thumb.webp",
                     "full_url": "/media/gallery/draft-full.webp",
-                    "sort_order": 1,
+                    "captured_at": "2026-03-17T08:15:00+00:00",
                     "is_published": False,
                 },
             ]
@@ -78,7 +79,7 @@ def test_batch_upsert_photos_validates_uuid(client, monkeypatch):
                     "caption": "Evening light",
                     "thumb_url": "/media/gallery/bench-thumb.webp",
                     "full_url": "/media/gallery/bench-full.webp",
-                    "sort_order": 0,
+                    "captured_at": datetime.now(timezone.utc).isoformat(),
                     "is_published": True,
                 }
             ]

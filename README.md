@@ -85,9 +85,9 @@ For the photo gallery, generate both thumbnail and full-size variants from a dir
 1. Create a metadata CSV (example columns below):
 
 ```csv
-filename,id,alt_text,caption,sort_order,is_published
-IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,10,true
-IMG_1002.JPG,,Workbench detail,New fixture test fit,20,true
+filename,id,alt_text,caption,captured_at,is_published
+IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,2026-03-16T09:45:00-07:00,true
+IMG_1002.JPG,,Workbench detail,New fixture test fit,2026-03-15T18:22:00-07:00,true
 ```
 
 - `id` can be left blank on first run; the script writes generated UUIDs to a resolved CSV.
@@ -99,7 +99,8 @@ IMG_1002.JPG,,Workbench detail,New fixture test fit,20,true
   --input-dir ~/Pictures/gallery-upload \
   --metadata ~/Pictures/gallery-upload/metadata.csv \
   --thumb-width 640 \
-  --full-width 2560 \
+  --thumb-quality 82 \
+  --full-quality 95 \
   --manifest-out ./media/gallery-manifest.json
 ```
 
