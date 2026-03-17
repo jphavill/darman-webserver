@@ -1,5 +1,7 @@
 .project-pill {
   appearance: none;
+  display: block;
+  width: 100%;
   text-align: left;
   cursor: pointer;
   background: var(--surface);

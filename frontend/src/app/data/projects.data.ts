@@ -46,7 +46,7 @@ This project combines a modern frontend with API services and production deploym
 - Cloudflare Tunnel + Caddy`,
     thumbnail: sharedThumbnail,
     tags: ['TypeScript', 'Angular'],
-    links: [{ type: 'github', label: 'Source Code', url: 'https://github.com/jphavill' }],
+    links: [{ type: 'github', label: 'Source Code', url: 'https://github.com/jphavill/darman-webserver' }],
     type: 'software'
   }
 ];

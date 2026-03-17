@@ -1,8 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
+  ColumnResizedEvent,
   ColDef,
   DateFilterModel,
+  GridApi,
+  GridSizeChangedEvent,
   GridReadyEvent,
   IDatasource,
   IGetRowsParams,
@@ -22,6 +25,7 @@ import { SprintQuery, SprintRow } from '../../models/sprint.model';
 })
 export class SprintTimesGridComponent {
   private readonly sprintApi = inject(SprintApiService);
+  private gridApi?: GridApi<SprintRow>;
 
   readonly pageSize = 25;
   errorMessage = '';
@@ -31,7 +35,8 @@ export class SprintTimesGridComponent {
     filter: true,
     resizable: true,
     floatingFilter: true,
-    minWidth: 140
+    minWidth: 140,
+    flex: 1
   };
 
   readonly columnDefs: ColDef<SprintRow>[] = [
@@ -52,6 +57,8 @@ export class SprintTimesGridComponent {
   ];
 
   onGridReady(event: GridReadyEvent<SprintRow>): void {
+    this.gridApi = event.api;
+
     const datasource: IDatasource = {
       getRows: (params: IGetRowsParams) => {
         const query = this.buildQuery(params);
@@ -70,6 +77,32 @@ export class SprintTimesGridComponent {
     };
 
     event.api.setGridOption('datasource', datasource);
+    this.sizeColumnsToTable(event.api);
+  }
+
+  onGridSizeChanged(event: GridSizeChangedEvent<SprintRow>): void {
+    this.sizeColumnsToTable(event.api);
+  }
+
+  onColumnResized(event: ColumnResizedEvent<SprintRow>): void {
+    if (event.finished && event.source === 'uiColumnDragged') {
+      this.sizeColumnsToTable(event.api);
+    }
+  }
+
+  private sizeColumnsToTable(api: GridApi<SprintRow>): void {
+    requestAnimationFrame(() => {
+      api.sizeColumnsToFit();
+    });
+  }
+
+  resetColumnWidths(): void {
+    if (!this.gridApi) {
+      return;
+    }
+
+    this.gridApi.resetColumnState();
+    this.sizeColumnsToTable(this.gridApi);
   }
 
   private buildQuery(params: IGetRowsParams): SprintQuery {

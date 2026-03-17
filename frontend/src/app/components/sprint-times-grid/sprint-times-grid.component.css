@@ -1,10 +1,50 @@
+.grid-shell {
+  position: relative;
+}
+
 .sprint-grid {
   width: 100%;
-  height: 560px;
+  height: clamp(480px, 68dvh, 620px);
   border-radius: 12px;
   overflow: hidden;
   margin-top: 1rem;
   box-shadow: var(--shadow-soft);
+}
+
+.reset-columns-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(23, 31, 42, 0.88);
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  backdrop-filter: blur(4px);
+  transition: transform 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+.reset-columns-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+}
+
+.reset-columns-button:hover {
+  transform: translateY(-1px);
+  background: rgba(143, 184, 232, 0.2);
+  color: var(--accent-strong);
+}
+
+.reset-columns-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .sprint-grid.ag-theme-quartz {
@@ -41,6 +81,27 @@
   --ag-wrapper-border-radius: 12px;
 }
 
+:host ::ng-deep .sprint-grid .ag-paging-panel {
+  border-top-color: rgba(255, 255, 255, 0.08);
+  min-height: 50px;
+  padding: 0.5rem 0.85rem;
+  gap: 0.6rem;
+}
+
+:host ::ng-deep .sprint-grid .ag-paging-row-summary-panel,
+:host ::ng-deep .sprint-grid .ag-paging-description {
+  color: var(--text-soft);
+}
+
+:host ::ng-deep .sprint-grid .ag-paging-button {
+  border-radius: 8px;
+  transition: background-color 0.18s ease;
+}
+
+:host ::ng-deep .sprint-grid .ag-paging-button:hover {
+  background-color: rgba(143, 184, 232, 0.16);
+}
+
 .error-message {
   margin-top: 0.9rem;
   color: #ffbab0;
@@ -48,6 +109,37 @@
 
 @media (max-width: 700px) {
   .sprint-grid {
-    height: 460px;
+    height: clamp(360px, calc(100dvh - 240px), 560px);
+  }
+
+  .reset-columns-button {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  :host ::ng-deep .sprint-grid .ag-paging-panel {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.4rem;
+    min-height: 74px;
+    padding: 0.55rem 0.6rem;
+    text-align: center;
+  }
+
+  :host ::ng-deep .sprint-grid .ag-paging-row-summary-panel {
+    width: 100%;
+    justify-content: center;
+    margin: 0;
+  }
+
+  :host ::ng-deep .sprint-grid .ag-paging-page-summary-panel {
+    margin-inline: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    column-gap: 0.35rem;
   }
 }

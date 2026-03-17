@@ -1,9 +1,11 @@
 from datetime import date
 
+from uuid import uuid4
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from models import Person, PersonBestTime, SprintEntry
+from models import Person, PersonBestTime, Photo, SprintEntry
 
 
 def test_model_relationships_persist(db_session):
@@ -46,3 +48,21 @@ def test_sprint_time_positive_constraint(db_session):
         db_session.commit()
 
     db_session.rollback()
+
+
+def test_photo_model_persists(db_session):
+    photo = Photo(
+        id=uuid4(),
+        alt_text="Ridge line",
+        caption="Cloud cover breaking",
+        thumb_url="/media/gallery/ridge-thumb.webp",
+        full_url="/media/gallery/ridge-full.webp",
+        sort_order=12,
+        is_published=True,
+    )
+
+    db_session.add(photo)
+    db_session.commit()
+
+    loaded = db_session.query(Photo).filter_by(id=photo.id).one()
+    assert loaded.thumb_url.endswith("thumb.webp")

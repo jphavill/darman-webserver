@@ -78,6 +78,45 @@ Example homepage image URL currently used by the Angular app:
 scp media/{filename}.webp jh://home/jphavill/dockerStuff/darman-webserver/media/
 ```
 
+### Batch gallery workflow (thumb + full)
+
+For the photo gallery, generate both thumbnail and full-size variants from a directory plus metadata CSV.
+
+1. Create a metadata CSV (example columns below):
+
+```csv
+filename,id,alt_text,caption,sort_order,is_published
+IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,10,true
+IMG_1002.JPG,,Workbench detail,New fixture test fit,20,true
+```
+
+- `id` can be left blank on first run; the script writes generated UUIDs to a resolved CSV.
+
+2. Process all photos in a directory:
+
+```bash
+./scripts/prepare-gallery-batch.py \
+  --input-dir ~/Pictures/gallery-upload \
+  --metadata ~/Pictures/gallery-upload/metadata.csv \
+  --thumb-width 640 \
+  --full-width 2560 \
+  --manifest-out ./media/gallery-manifest.json
+```
+
+3. Copy generated files to the server media folder:
+
+```bash
+scp media/gallery/* jh://home/jphavill/dockerStuff/darman-webserver/media/gallery/
+```
+
+4. Upsert metadata into Postgres via API:
+
+```bash
+./scripts/upsert-gallery-manifest.sh ./media/gallery-manifest.json "$ADMIN_API_TOKEN" http://localhost/api
+```
+
+The gallery API stores both `thumb_url` and `full_url` for each UUID photo record.
+
 ### Hashing + resizing workflow
 
 `scripts/prepare-media.sh` does this automatically:
@@ -182,6 +221,11 @@ If you see `connection to server at "localhost", port 5432 failed: Connection re
 - `POST /api/v1/sprints` (auth required): insert a sprint record with `name`, `sprint_time_ms`, `sprint_date`, `location`
 - `GET /api/v1/sprints`: list sprint records with filtering, ordering, pagination
 - `GET /api/v1/sprints/best`: list each person's fastest sprint entry
+
+## Photos API
+
+- `GET /api/v1/photos`: list published gallery photos ordered by sort order
+- `POST /api/v1/photos/batch-upsert` (auth required): create/update photos by UUID with thumb/full URLs and captions
 
 Auth for inserts uses a bearer token:
 

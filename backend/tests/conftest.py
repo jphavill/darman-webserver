@@ -56,7 +56,7 @@ def db_session() -> Generator:
     session = SessionLocal()
     session.execute(
         text(
-            "TRUNCATE TABLE person_best_times, sprint_entries, people RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE photos, person_best_times, sprint_entries, people RESTART IDENTITY CASCADE"
         )
     )
     session.commit()

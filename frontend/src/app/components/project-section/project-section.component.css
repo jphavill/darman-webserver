@@ -1,5 +1,6 @@
 section {
   margin-bottom: 3rem;
+  text-align: center;
 }
 
 h2 {
@@ -11,7 +12,26 @@ h2 {
 }
 
 .projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
+  max-width: calc((3 * 360px) + (2 * 1.5rem));
+  margin-inline: auto;
+}
+
+.projects-grid app-project-pill {
+  flex: 1 1 320px;
+  min-width: min(100%, 280px);
+  max-width: 360px;
+}
+
+@media (max-width: 760px) {
+  .projects-grid {
+    max-width: 360px;
+  }
+
+  .projects-grid app-project-pill {
+    flex-basis: 100%;
+  }
 }

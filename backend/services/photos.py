@@ -1,0 +1,61 @@
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import Session
+
+from models import Photo
+from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow
+
+
+def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
+    query = db.query(Photo).filter(Photo.is_published.is_(True))
+    query = query.order_by(Photo.sort_order.asc(), Photo.created_at.desc(), Photo.id.asc())
+
+    total = query.count()
+    records = query.offset(offset).limit(limit).all()
+
+    rows = [
+        PhotoRow(
+            id=record.id,
+            alt_text=record.alt_text,
+            caption=record.caption,
+            thumb_url=record.thumb_url,
+            full_url=record.full_url,
+            sort_order=record.sort_order,
+            is_published=record.is_published,
+            created_at=record.created_at,
+            updated_at=record.updated_at,
+        )
+        for record in records
+    ]
+
+    return PhotoListResponse(rows=rows, total=total)
+
+
+def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoListResponse:
+    for item in payload.rows:
+        statement = insert(Photo).values(
+            id=item.id,
+            alt_text=item.alt_text.strip(),
+            caption=item.caption.strip(),
+            thumb_url=item.thumb_url.strip(),
+            full_url=item.full_url.strip(),
+            sort_order=item.sort_order,
+            is_published=item.is_published,
+        )
+        statement = statement.on_conflict_do_update(
+            index_elements=[Photo.id],
+            set_={
+                "alt_text": item.alt_text.strip(),
+                "caption": item.caption.strip(),
+                "thumb_url": item.thumb_url.strip(),
+                "full_url": item.full_url.strip(),
+                "sort_order": item.sort_order,
+                "is_published": item.is_published,
+                "updated_at": func.now(),
+            },
+        )
+        db.execute(statement)
+
+    db.commit()
+
+    return list_photos(db=db, limit=200, offset=0)

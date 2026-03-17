@@ -1,4 +1,7 @@
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String, func
+import uuid
+
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -64,3 +67,25 @@ class PersonBestTime(Base):
 
     person = relationship("Person", back_populates="best_time")
     entry = relationship("SprintEntry", back_populates="best_for_person")
+
+
+class Photo(Base):
+    __tablename__ = "photos"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    alt_text: Mapped[str] = mapped_column(String(240), nullable=False)
+    caption: Mapped[str] = mapped_column(Text, nullable=False)
+    thumb_url: Mapped[str] = mapped_column(String(400), nullable=False)
+    full_url: Mapped[str] = mapped_column(String(400), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -36,4 +37,35 @@ class BestTimeRow(BaseModel):
 
 class BestTimesResponse(BaseModel):
     rows: list[BestTimeRow]
+    total: int
+
+
+class PhotoUpsertItem(BaseModel):
+    id: UUID
+    alt_text: str = Field(min_length=1, max_length=240)
+    caption: str = Field(min_length=1)
+    thumb_url: str = Field(min_length=1, max_length=400)
+    full_url: str = Field(min_length=1, max_length=400)
+    sort_order: int = Field(default=0)
+    is_published: bool = Field(default=True)
+
+
+class PhotoBatchUpsertRequest(BaseModel):
+    rows: list[PhotoUpsertItem] = Field(min_length=1)
+
+
+class PhotoRow(BaseModel):
+    id: UUID
+    alt_text: str
+    caption: str
+    thumb_url: str
+    full_url: str
+    sort_order: int
+    is_published: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class PhotoListResponse(BaseModel):
+    rows: list[PhotoRow]
     total: int

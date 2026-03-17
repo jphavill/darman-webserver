@@ -1,9 +1,11 @@
 from datetime import date, datetime
 
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
-from schemas import SprintCreateRequest, SprintListResponse, SprintRow
+from schemas import PhotoBatchUpsertRequest, SprintCreateRequest, SprintListResponse, SprintRow
 
 
 def test_sprint_create_request_accepts_valid_payload():
@@ -34,3 +36,26 @@ def test_sprint_list_response_shape():
     response = SprintListResponse(rows=[row], total=1)
     assert response.total == 1
     assert response.rows[0].name == "Casey"
+
+
+def test_photo_batch_upsert_request_requires_rows():
+    with pytest.raises(ValidationError):
+        PhotoBatchUpsertRequest(rows=[])
+
+
+def test_photo_batch_upsert_request_accepts_valid_payload():
+    payload = PhotoBatchUpsertRequest(
+        rows=[
+            {
+                "id": str(uuid4()),
+                "alt_text": "Bridge at dusk",
+                "caption": "Blue hour",
+                "thumb_url": "/media/gallery/bridge-thumb.webp",
+                "full_url": "/media/gallery/bridge-full.webp",
+                "sort_order": 0,
+                "is_published": True,
+            }
+        ]
+    )
+
+    assert len(payload.rows) == 1

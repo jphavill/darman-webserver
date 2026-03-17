@@ -1,6 +1,40 @@
 <section class="page-intro">
   <h1>Photo Gallery</h1>
-  <p>A focused space for photography and visual highlights.</p>
+  <p>A packed visual wall that preserves each photo&apos;s natural aspect ratio.</p>
 </section>
 
-<app-featured-media [media]="featuredMedia"></app-featured-media>
+<section class="gallery-shell" aria-label="Photo gallery">
+  @if (errorMessage) {
+    <p class="error-message">{{ errorMessage }}</p>
+  }
+
+  <div class="photo-masonry">
+    @for (photo of photos; track trackByPhoto($index, photo)) {
+      <button class="photo-tile" type="button" (click)="openPhoto(photo)" [attr.aria-label]="'Open photo: ' + photo.alt_text">
+        <img [src]="photo.thumb_url" [alt]="photo.alt_text" loading="lazy" decoding="async" />
+      </button>
+    }
+  </div>
+</section>
+
+@if (activePhoto) {
+  <div class="photo-backdrop" (click)="closePhoto()"></div>
+
+  <article class="photo-modal" role="dialog" aria-modal="true" [attr.aria-label]="activePhoto.alt_text" (click)="$event.stopPropagation()">
+    <button class="close-btn" type="button" (click)="closePhoto()" aria-label="Close photo">
+      <span aria-hidden="true">×</span>
+    </button>
+
+    <img class="photo-modal-image" [src]="activePhoto.full_url" [alt]="activePhoto.alt_text" decoding="async" />
+
+    <div class="photo-modal-footer">
+      <p>{{ activePhoto.caption }}</p>
+      <button class="fullscreen-btn" type="button" (click)="openFullResolution()" aria-label="Open full resolution photo">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M5 9V5h4M19 9V5h-4M5 15v4h4M19 15v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Fullscreen</span>
+      </button>
+    </div>
+  </article>
+}

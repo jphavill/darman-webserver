@@ -1,15 +1,31 @@
-<ag-grid-angular
-  class="ag-theme-quartz sprint-grid"
-  [columnDefs]="columnDefs"
-  [defaultColDef]="defaultColDef"
-  rowModelType="infinite"
-  [cacheBlockSize]="pageSize"
-  [pagination]="true"
-  [paginationPageSize]="pageSize"
-  [maxBlocksInCache]="2"
-  [animateRows]="true"
-  (gridReady)="onGridReady($event)"
-></ag-grid-angular>
+<div class="grid-shell">
+  <button
+    class="reset-columns-button"
+    type="button"
+    (click)="resetColumnWidths()"
+    aria-label="Reset table column widths"
+    title="Reset column widths"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 12l3-3v2h10V9l3 3-3 3v-2H7v2z" />
+    </svg>
+  </button>
+
+  <ag-grid-angular
+    class="ag-theme-quartz sprint-grid"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    rowModelType="infinite"
+    [cacheBlockSize]="pageSize"
+    [pagination]="true"
+    [paginationPageSize]="pageSize"
+    [maxBlocksInCache]="2"
+    [animateRows]="true"
+    (gridReady)="onGridReady($event)"
+    (gridSizeChanged)="onGridSizeChanged($event)"
+    (columnResized)="onColumnResized($event)"
+  ></ag-grid-angular>
+</div>
 
 @if (errorMessage) {
   <p class="error-message">{{ errorMessage }}</p>
