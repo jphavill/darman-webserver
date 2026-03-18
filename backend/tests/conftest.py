@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import time
 from collections.abc import Generator
@@ -10,14 +11,49 @@ from sqlalchemy import text
 
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-TEST_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{POSTGRES_DB}"
+BASE_POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
+TEST_POSTGRES_DB = os.getenv("TEST_POSTGRES_DB", f"{BASE_POSTGRES_DB}_test")
+
+if not re.fullmatch(r"[A-Za-z0-9_]+", TEST_POSTGRES_DB):
+    raise RuntimeError(
+        f"Invalid TEST_POSTGRES_DB '{TEST_POSTGRES_DB}'. Use only letters, numbers, and underscores."
+    )
+if not TEST_POSTGRES_DB.endswith("_test"):
+    raise RuntimeError(
+        f"Unsafe TEST_POSTGRES_DB '{TEST_POSTGRES_DB}'. Test database names must end with '_test'."
+    )
+
+TEST_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{TEST_POSTGRES_DB}"
 
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 
 def _run(command: str, *, cwd: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=cwd, shell=True, check=True, capture_output=True, text=True)
+
+
+def _ensure_test_database(repo_root: str) -> None:
+    exists_result = subprocess.run(
+        (
+            "docker compose -f docker-compose.local.yml exec -T postgres "
+            f"psql -U {POSTGRES_USER} -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname = '{TEST_POSTGRES_DB}'\""
+        ),
+        cwd=repo_root,
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    if exists_result.returncode != 0:
+        raise RuntimeError(f"Failed to check test database existence: {exists_result.stderr.strip()}")
+
+    if exists_result.stdout.strip() != "1":
+        _run(
+            (
+                "docker compose -f docker-compose.local.yml exec -T postgres "
+                f"psql -U {POSTGRES_USER} -d postgres -c \"CREATE DATABASE {TEST_POSTGRES_DB}\""
+            ),
+            cwd=repo_root,
+        )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,7 +68,7 @@ def ensure_test_database() -> Generator[None, None, None]:
         result = subprocess.run(
             (
                 "docker compose -f docker-compose.local.yml exec -T postgres "
-                f"pg_isready -U {POSTGRES_USER} -d {POSTGRES_DB}"
+                f"pg_isready -U {POSTGRES_USER} -d postgres"
             ),
             cwd=repo_root,
             shell=True,
@@ -45,6 +81,7 @@ def ensure_test_database() -> Generator[None, None, None]:
             raise RuntimeError(f"Postgres did not become ready: {result.stderr.strip()}")
         time.sleep(1)
 
+    _ensure_test_database(repo_root=repo_root)
     _run("alembic -c alembic.ini upgrade head", cwd=backend_root)
     yield
 
@@ -54,6 +91,13 @@ def db_session() -> Generator:
     from database import SessionLocal
 
     session = SessionLocal()
+
+    current_db = session.execute(text("SELECT current_database()")).scalar_one()
+    if not isinstance(current_db, str) or not current_db.endswith("_test"):
+        raise RuntimeError(
+            f"Refusing to truncate non-test database '{current_db}'. Database name must end with '_test'."
+        )
+
     session.execute(
         text(
             "TRUNCATE TABLE photos, person_best_times, sprint_entries, people RESTART IDENTITY CASCADE"

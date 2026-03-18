@@ -87,3 +87,141 @@ def test_batch_upsert_photos_validates_uuid(client, monkeypatch):
     )
 
     assert response.status_code == 422
+
+
+def test_update_photo_requires_auth(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    response = client.post(
+        f"/v1/photos/{uuid4()}",
+        json={
+            "alt_text": "Updated alt",
+            "caption": "Updated caption",
+            "thumb_url": "/media/gallery/updated-thumb.webp",
+            "full_url": "/media/gallery/updated-full.webp",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "is_published": True,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_delete_photo_requires_auth(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    response = client.delete(f"/v1/photos/{uuid4()}")
+    assert response.status_code == 401
+
+
+def test_update_and_delete_photo_by_id(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    photo_id = uuid4()
+
+    create_response = client.post(
+        "/v1/photos/batch-upsert",
+        headers={"Authorization": "Bearer secret"},
+        json={
+            "rows": [
+                {
+                    "id": str(photo_id),
+                    "alt_text": "Original alt",
+                    "caption": "Original caption",
+                    "thumb_url": "/media/gallery/original-thumb.webp",
+                    "full_url": "/media/gallery/original-full.webp",
+                    "captured_at": "2026-03-16T08:15:00+00:00",
+                    "is_published": True,
+                }
+            ]
+        },
+    )
+    assert create_response.status_code == 200
+
+    update_response = client.post(
+        f"/v1/photos/{photo_id}",
+        headers={"Authorization": "Bearer secret"},
+        json={
+            "alt_text": "Updated alt",
+            "caption": "Updated caption",
+            "thumb_url": "/media/gallery/updated-thumb.webp",
+            "full_url": "/media/gallery/updated-full.webp",
+            "captured_at": "2026-03-17T08:15:00+00:00",
+            "is_published": False,
+        },
+    )
+    assert update_response.status_code == 200
+    update_body = update_response.json()
+    assert update_body["id"] == str(photo_id)
+    assert update_body["caption"] == "Updated caption"
+    assert update_body["is_published"] is False
+
+    listed_after_update = client.get("/v1/photos")
+    assert listed_after_update.status_code == 200
+    assert listed_after_update.json()["total"] == 0
+
+    delete_response = client.delete(
+        f"/v1/photos/{photo_id}",
+        headers={"Authorization": "Bearer secret"},
+    )
+    assert delete_response.status_code == 204
+
+
+def test_update_photo_supports_partial_updates(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    photo_id = uuid4()
+
+    create_response = client.post(
+        "/v1/photos/batch-upsert",
+        headers={"Authorization": "Bearer secret"},
+        json={
+            "rows": [
+                {
+                    "id": str(photo_id),
+                    "alt_text": "Original alt",
+                    "caption": "Original caption",
+                    "thumb_url": "/media/gallery/original-thumb.webp",
+                    "full_url": "/media/gallery/original-full.webp",
+                    "captured_at": "2026-03-16T08:15:00+00:00",
+                    "is_published": True,
+                }
+            ]
+        },
+    )
+    assert create_response.status_code == 200
+
+    update_response = client.post(
+        f"/v1/photos/{photo_id}",
+        headers={"Authorization": "Bearer secret"},
+        json={"caption": "Updated caption only", "is_published": False},
+    )
+    assert update_response.status_code == 200
+    update_body = update_response.json()
+    assert update_body["id"] == str(photo_id)
+    assert update_body["alt_text"] == "Original alt"
+    assert update_body["caption"] == "Updated caption only"
+    assert update_body["thumb_url"] == "/media/gallery/original-thumb.webp"
+    assert update_body["full_url"] == "/media/gallery/original-full.webp"
+    assert update_body["is_published"] is False
+
+
+def test_update_and_delete_photo_return_404_for_missing_id(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    missing_id = uuid4()
+
+    update_response = client.post(
+        f"/v1/photos/{missing_id}",
+        headers={"Authorization": "Bearer secret"},
+        json={
+            "alt_text": "No photo",
+            "caption": "No photo",
+            "thumb_url": "/media/gallery/no-thumb.webp",
+            "full_url": "/media/gallery/no-full.webp",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "is_published": True,
+        },
+    )
+    assert update_response.status_code == 404
+
+    delete_response = client.delete(
+        f"/v1/photos/{missing_id}",
+        headers={"Authorization": "Bearer secret"},
+    )
+    assert delete_response.status_code == 404

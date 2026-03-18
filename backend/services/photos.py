@@ -1,9 +1,12 @@
+from uuid import UUID
+
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from models import Photo
-from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow
+from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow, PhotoUpdateRequest
 
 
 def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
@@ -13,20 +16,7 @@ def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
     total = query.count()
     records = query.offset(offset).limit(limit).all()
 
-    rows = [
-        PhotoRow(
-            id=record.id,
-            alt_text=record.alt_text,
-            caption=record.caption,
-            thumb_url=record.thumb_url,
-            full_url=record.full_url,
-            captured_at=record.captured_at,
-            is_published=record.is_published,
-            created_at=record.created_at,
-            updated_at=record.updated_at,
-        )
-        for record in records
-    ]
+    rows = [_to_photo_row(record) for record in records]
 
     return PhotoListResponse(rows=rows, total=total)
 
@@ -59,3 +49,50 @@ def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoL
     db.commit()
 
     return list_photos(db=db, limit=200, offset=0)
+
+
+def update_photo(db: Session, photo_id: UUID, payload: PhotoUpdateRequest) -> PhotoRow:
+    record = db.query(Photo).filter(Photo.id == photo_id).one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    if payload.alt_text is not None:
+        record.alt_text = payload.alt_text.strip()
+    if payload.caption is not None:
+        record.caption = payload.caption.strip()
+    if payload.thumb_url is not None:
+        record.thumb_url = payload.thumb_url.strip()
+    if payload.full_url is not None:
+        record.full_url = payload.full_url.strip()
+    if payload.captured_at is not None:
+        record.captured_at = payload.captured_at
+    if payload.is_published is not None:
+        record.is_published = payload.is_published
+    record.updated_at = func.now()
+
+    db.commit()
+    db.refresh(record)
+    return _to_photo_row(record)
+
+
+def delete_photo(db: Session, photo_id: UUID) -> None:
+    record = db.query(Photo).filter(Photo.id == photo_id).one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    db.delete(record)
+    db.commit()
+
+
+def _to_photo_row(record: Photo) -> PhotoRow:
+    return PhotoRow(
+        id=record.id,
+        alt_text=record.alt_text,
+        caption=record.caption,
+        thumb_url=record.thumb_url,
+        full_url=record.full_url,
+        captured_at=record.captured_at,
+        is_published=record.is_published,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+    )

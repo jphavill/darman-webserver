@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -52,6 +53,15 @@ class PhotoUpsertItem(BaseModel):
 
 class PhotoBatchUpsertRequest(BaseModel):
     rows: list[PhotoUpsertItem] = Field(min_length=1)
+
+
+class PhotoUpdateRequest(BaseModel):
+    alt_text: Optional[str] = Field(default=None, min_length=1, max_length=240)
+    caption: Optional[str] = Field(default=None, min_length=1)
+    thumb_url: Optional[str] = Field(default=None, min_length=1, max_length=400)
+    full_url: Optional[str] = Field(default=None, min_length=1, max_length=400)
+    captured_at: Optional[datetime] = None
+    is_published: Optional[bool] = None
 
 
 class PhotoRow(BaseModel):
