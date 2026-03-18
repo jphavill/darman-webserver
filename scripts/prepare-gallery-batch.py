@@ -259,6 +259,42 @@ def write_resolved_metadata(path: Path, rows: list[MetadataRow]) -> None:
             )
 
 
+def merge_manifest_rows(manifest_path: Path, new_rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    merged: dict[str, dict[str, object]] = {}
+    order: list[str] = []
+
+    if manifest_path.exists():
+        with manifest_path.open("r", encoding="utf-8") as existing_handle:
+            existing_payload = json.load(existing_handle)
+
+        if not isinstance(existing_payload, dict):
+            raise ValueError("Existing manifest JSON must be an object with a 'rows' array")
+
+        existing_rows = existing_payload.get("rows", [])
+        if not isinstance(existing_rows, list):
+            raise ValueError("Existing manifest JSON field 'rows' must be an array")
+
+        for row in existing_rows:
+            if not isinstance(row, dict):
+                raise ValueError("Existing manifest rows must be objects")
+            photo_id = str(row.get("id", "")).strip()
+            if not photo_id:
+                raise ValueError("Existing manifest row missing required 'id'")
+            if photo_id not in merged:
+                order.append(photo_id)
+            merged[photo_id] = row
+
+    for row in new_rows:
+        photo_id = str(row.get("id", "")).strip()
+        if not photo_id:
+            raise ValueError("Generated manifest row missing required 'id'")
+        if photo_id not in merged:
+            order.append(photo_id)
+        merged[photo_id] = row
+
+    return [merged[photo_id] for photo_id in order]
+
+
 def main() -> int:
     args = parse_args()
     input_dir = Path(args.input_dir).resolve()
@@ -343,13 +379,16 @@ def main() -> int:
 
             print(f"Processed {row.filename} -> {thumb_name}, {full_name}")
 
+    merged_manifest_rows = merge_manifest_rows(manifest_path, manifest_rows)
+
     with manifest_path.open("w", encoding="utf-8") as handle:
-        json.dump({"rows": manifest_rows}, handle, indent=2)
+        json.dump({"rows": merged_manifest_rows}, handle, indent=2)
         handle.write("\n")
 
     write_resolved_metadata(metadata_out, metadata_rows)
 
     print(f"Manifest written: {manifest_path}")
+    print(f"Manifest rows: {len(merged_manifest_rows)} (new/updated in this batch: {len(manifest_rows)})")
     print(f"Resolved metadata written: {metadata_out}")
     print(f"Next: scp {media_dir}/* <server>:/path/to/media/gallery/")
     return 0

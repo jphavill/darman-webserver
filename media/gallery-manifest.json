@@ -494,6 +494,42 @@
       "full_url": "/media/gallery/550-img-2083-4a6915e2.full-3037f93d7fe8.webp",
       "captured_at": "2018-12-09T18:53:17+00:00",
       "is_published": true
+    },
+    {
+      "id": "b34feea4-546b-43e2-99c8-3ec7623bf148",
+      "alt_text": "Runner cross the bluenose marathon finish line",
+      "caption": "Bluenose 2025",
+      "thumb_url": "/media/gallery/dsc05801-b34feea4.thumb-f38bdfcc79bf.webp",
+      "full_url": "/media/gallery/dsc05801-b34feea4.full-6ad91e951ab0.webp",
+      "captured_at": "2025-05-18T12:59:29+00:00",
+      "is_published": true
+    },
+    {
+      "id": "0b7cc744-93b4-466c-b8ce-cd527a954069",
+      "alt_text": "Runner is neck and neck with another racer, running in the rain",
+      "caption": "Bluenose 2025",
+      "thumb_url": "/media/gallery/dsc05771-0b7cc744.thumb-fec7e3972aa2.webp",
+      "full_url": "/media/gallery/dsc05771-0b7cc744.full-77962314e554.webp",
+      "captured_at": "2025-05-18T12:58:35+00:00",
+      "is_published": true
+    },
+    {
+      "id": "77f3fabd-4802-41eb-9b39-2a6ebc604f27",
+      "alt_text": "Two men dressed in halloween costumes as Walter White cooking blue rocks on a stove",
+      "caption": "Breaking Bad",
+      "thumb_url": "/media/gallery/dsc03404-enhanced-nr-77f3fabd.thumb-c023c25d8e8a.webp",
+      "full_url": "/media/gallery/dsc03404-enhanced-nr-77f3fabd.full-b30cd9df1413.webp",
+      "captured_at": "2024-06-22T23:57:00+00:00",
+      "is_published": true
+    },
+    {
+      "id": "7aab5a01-13b7-47e0-8381-a8a4e081c7c2",
+      "alt_text": "A partial solar eclipse",
+      "caption": "Solar Eclipse",
+      "thumb_url": "/media/gallery/dsc05539-enhanced-sr-7aab5a01.thumb-456d2419b958.webp",
+      "full_url": "/media/gallery/dsc05539-enhanced-sr-7aab5a01.full-c1b673ae6451.webp",
+      "captured_at": "2024-04-08T19:37:57+00:00",
+      "is_published": true
     }
   ]
 }

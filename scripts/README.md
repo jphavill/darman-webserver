@@ -23,6 +23,7 @@ This folder contains scripts for preparing gallery images and syncing metadata t
     - thumbnail (for gallery grid, resized by `--thumb-width`, default quality `82`)
     - full-size (for modal/fullscreen, keeps original resolution, default quality `95`)
   - Writes an API manifest JSON and a resolved metadata CSV (with UUIDs).
+  - If `--manifest-out` already exists, rows are merged by `id` (new IDs append, existing IDs update in place).
 
 - `upsert-gallery-manifest.sh`
   - Sends the generated manifest to `POST /api/v1/photos/batch-upsert`.
@@ -90,7 +91,7 @@ Run from repo root:
 Outputs:
 
 - Processed images in `media/gallery/`
-- API payload in `media/gallery-manifest.json`
+- API payload in `media/gallery-manifest.json` (merged/upserted by `id` if file already exists)
 - Resolved CSV (defaults to `metadata.resolved.csv`) with UUID IDs filled in (merged/upserted if file already exists)
 
 ## 3 Copy images to server media folder

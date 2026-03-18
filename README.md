@@ -104,6 +104,8 @@ IMG_1002.JPG,,Workbench detail,New fixture test fit,2026-03-15T18:22:00-07:00,tr
   --manifest-out ./media/gallery-manifest.json
 ```
 
+- `media/gallery-manifest.json` is merged by `id` when it already exists (new IDs append, existing IDs update), so you can process new batches from different source directories without re-including older files.
+
 3. Copy generated files to the server media folder:
 
 ```bash
