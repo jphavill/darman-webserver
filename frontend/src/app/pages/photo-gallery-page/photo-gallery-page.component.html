@@ -10,8 +10,8 @@
 
   <div class="photo-masonry">
     @for (photo of photos; track trackByPhoto($index, photo)) {
-      <button class="photo-tile" type="button" (click)="openPhoto(photo)" [attr.aria-label]="'Open photo: ' + photo.alt_text">
-        <img [src]="photo.thumb_url" [alt]="photo.alt_text" loading="lazy" decoding="async" />
+      <button class="photo-tile" type="button" (click)="openPhoto(photo, $event)" [attr.aria-label]="'Open photo: ' + photo.alt_text">
+        <img [src]="photo.thumb_url" [alt]="photo.alt_text" loading="lazy" decoding="async" (load)="onThumbLoad($event, photo)" />
       </button>
     }
   </div>
@@ -25,7 +25,7 @@
       <span aria-hidden="true">×</span>
     </button>
 
-    <img class="photo-modal-image" [src]="activePhoto.full_url" [alt]="activePhoto.alt_text" decoding="async" />
+    <img class="photo-modal-image" [src]="activePhoto.full_url" [alt]="activePhoto.alt_text" [ngStyle]="activePhotoImageStyle" decoding="async" (load)="onActivePhotoLoad($event)" />
 
     <div class="photo-modal-footer">
       <p>{{ activePhoto.caption }}</p>
