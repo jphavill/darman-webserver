@@ -2,17 +2,27 @@
   <h3>Runner Selector</h3>
 
   <div class="runner-search-row">
-    <input
-      type="text"
-      list="runner-options"
-      [ngModel]="searchTerm"
-      (ngModelChange)="searchTermChange.emit($event)"
-      placeholder="Type runner name"
-      aria-label="Search runners"
-    />
-    <datalist id="runner-options">
-      <option *ngFor="let runner of filteredRunners" [value]="runner.name"></option>
-    </datalist>
+    <div class="search-input-wrap">
+      <input
+        type="text"
+        [ngModel]="searchTerm"
+        (focus)="openDropdown()"
+        (blur)="closeDropdown()"
+        (ngModelChange)="onSearchTermChange($event)"
+        placeholder="Type runner name"
+        aria-label="Search runners"
+      />
+
+      <ul class="runner-dropdown" *ngIf="dropdownOpen && filteredRunners.length > 0">
+        <li
+          *ngFor="let runner of filteredRunners"
+          [class.is-disabled]="!canAdd(runner)"
+          (mousedown)="selectFromDropdown(runner)"
+        >
+          {{ runner.name }}
+        </li>
+      </ul>
+    </div>
 
     <button
       type="button"
@@ -22,6 +32,4 @@
       Add
     </button>
   </div>
-
-  <small *ngIf="searchTerm && !addCandidate">Type the full name or narrow to one runner.</small>
 </section>

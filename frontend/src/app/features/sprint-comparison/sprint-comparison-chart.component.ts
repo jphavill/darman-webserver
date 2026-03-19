@@ -103,7 +103,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
     return {
       animationDuration: 250,
-      grid: { left: 52, right: 24, top: 24, bottom: 56 },
+      grid: { left: 84, right: 24, top: 24, bottom: 56, containLabel: true },
       tooltip: {
         trigger: 'axis',
         formatter: (rawParams) => {
@@ -177,7 +177,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
     return {
       animationDuration: 250,
-      grid: { left: 52, right: 24, top: 24, bottom: 56 },
+      grid: { left: 84, right: 24, top: 24, bottom: 56, containLabel: true },
       tooltip: {
         trigger: 'axis',
         formatter: (rawParams) => {

@@ -47,12 +47,6 @@ export class SprintComparisonPageComponent implements OnInit {
     error: null
   };
 
-  get subtitle(): string {
-    const modeLabel = this.state.mode === 'progression' ? 'Progression (latest-aligned)' : 'Daily Best by date';
-    const locationLabel = this.state.location ?? 'All locations';
-    return `${modeLabel} - ${locationLabel}`;
-  }
-
   ngOnInit(): void {
     this.loadLookups();
   }

@@ -16,13 +16,15 @@ export class RunnerSelectorComponent {
   @Input() searchTerm = '';
   @Input() maxSelected = 4;
 
+  dropdownOpen = false;
+
   @Output() readonly searchTermChange = new EventEmitter<string>();
   @Output() readonly addRunner = new EventEmitter<AvailableRunner>();
 
   get filteredRunners(): AvailableRunner[] {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
     if (!normalizedSearch) {
-      return [];
+      return this.runners;
     }
     return this.runners.filter((runner) => runner.name.toLowerCase().includes(normalizedSearch));
   }
@@ -60,5 +62,31 @@ export class RunnerSelectorComponent {
 
     this.addRunner.emit(candidate);
     this.searchTermChange.emit('');
+    this.dropdownOpen = false;
+  }
+
+  openDropdown(): void {
+    this.dropdownOpen = true;
+  }
+
+  closeDropdown(): void {
+    window.setTimeout(() => {
+      this.dropdownOpen = false;
+    }, 100);
+  }
+
+  onSearchTermChange(value: string): void {
+    this.searchTermChange.emit(value);
+    this.dropdownOpen = true;
+  }
+
+  selectFromDropdown(runner: AvailableRunner): void {
+    if (!this.canAdd(runner)) {
+      return;
+    }
+
+    this.addRunner.emit(runner);
+    this.searchTermChange.emit('');
+    this.dropdownOpen = false;
   }
 }

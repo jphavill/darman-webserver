@@ -9,15 +9,22 @@
         (change)="colorChange.emit({ personId: runner.personId, color: $any($event.target).value })"
       />
       <span>{{ runner.personName }}</span>
-      <label>
+      <label class="visibility-toggle">
         <input
           type="checkbox"
           [checked]="runner.visible"
           (change)="visibilityChange.emit({ personId: runner.personId, visible: $any($event.target).checked })"
         />
-        Visible
+        Show
       </label>
-      <button type="button" (click)="removeRunner.emit(runner.personId)">Remove</button>
+      <button
+        type="button"
+        class="remove-button"
+        [attr.aria-label]="'Remove ' + runner.personName"
+        (click)="removeRunner.emit(runner.personId)"
+      >
+        X
+      </button>
     </li>
   </ul>
 </section>

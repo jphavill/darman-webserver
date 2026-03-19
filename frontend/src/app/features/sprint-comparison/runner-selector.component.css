@@ -10,8 +10,14 @@
 
 .runner-search-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto auto;
+  align-items: center;
   gap: 0.3rem;
+  justify-content: start;
+}
+
+.search-input-wrap {
+  position: relative;
 }
 
 .runner-selector input {
@@ -21,6 +27,38 @@
   padding: 0.35rem 0.45rem;
   border-radius: 0;
   font-size: 0.82rem;
+}
+
+.runner-dropdown {
+  list-style: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 2px);
+  width: 100%;
+  max-height: 152px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-soft);
+  color: #ffffff;
+  z-index: 20;
+}
+
+.runner-dropdown li {
+  padding: 0.34rem 0.45rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runner-dropdown li:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.runner-dropdown li.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .runner-selector button {
@@ -39,16 +77,6 @@
   cursor: not-allowed;
 }
 
-.runner-selector small {
-  font-size: 0.72rem;
-  color: var(--text-soft);
-}
-
-@media (max-width: 760px) {
-  .runner-search-row {
-    grid-template-columns: 1fr;
-  }
-}
 
 .runner-results button:disabled {
   opacity: 0.5;

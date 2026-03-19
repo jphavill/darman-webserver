@@ -4,11 +4,6 @@
   color: var(--accent-strong);
 }
 
-.comparison-header p {
-  margin-top: 0.35rem;
-  color: var(--text-soft);
-}
-
 .comparison-layout {
   margin-top: 1rem;
   display: flex;
