@@ -85,6 +85,15 @@ def update_sprint_entry(db: Session, sprint_id: int, payload: SprintUpdateReques
     )
 
 
+def delete_sprint_entry(db: Session, sprint_id: int) -> None:
+    entry = db.query(SprintEntry).filter(SprintEntry.id == sprint_id).one_or_none()
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Sprint entry not found")
+
+    db.delete(entry)
+    db.commit()
+
+
 def list_sprints(
     db: Session,
     limit: int,

@@ -6,6 +6,13 @@ def _insert(client, token: str, payload: dict):
     )
 
 
+def _delete(client, token: str, sprint_id: int):
+    return client.delete(
+        f"/v1/sprints/{sprint_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
 def test_post_sprint_requires_auth(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     response = client.post(
@@ -216,3 +223,43 @@ def test_list_sprints_supports_filter_order_and_pagination(client, monkeypatch):
     assert body["total"] == 2
     assert len(body["rows"]) == 1
     assert body["rows"][0]["sprint_time_ms"] == 9900
+
+
+def test_delete_sprint_requires_auth(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    created = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    sprint_id = created.json()["id"]
+
+    response = client.delete(f"/v1/sprints/{sprint_id}")
+    assert response.status_code == 401
+
+
+def test_delete_sprint_removes_entry(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    created = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    sprint_id = created.json()["id"]
+
+    deleted = _delete(client, "secret", sprint_id)
+    assert deleted.status_code == 204
+
+    response = client.get("/v1/sprints")
+    assert response.status_code == 200
+    assert response.json()["total"] == 0

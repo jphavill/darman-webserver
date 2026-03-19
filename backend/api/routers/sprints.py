@@ -1,13 +1,14 @@
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from api.dependencies.auth import require_write_token
 from database import get_db
 from schemas import BestTimesResponse, SprintCreateRequest, SprintListResponse, SprintRow, SprintUpdateRequest
-from services.sprints import create_sprint_entry, list_best_times, list_sprints, update_sprint_entry
+from services.sprints import create_sprint_entry, delete_sprint_entry, list_best_times, list_sprints, update_sprint_entry
 
 
 router = APIRouter(prefix="/v1/sprints", tags=["sprints"])
@@ -33,6 +34,16 @@ def update_sprint_entry_route(
     db: Session = Depends(get_db),
 ) -> SprintRow:
     return update_sprint_entry(db=db, sprint_id=sprint_id, payload=payload)
+
+
+@router.delete("/{sprint_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_sprint_entry_route(
+    sprint_id: int,
+    _auth: None = Depends(require_write_token),
+    db: Session = Depends(get_db),
+) -> Response:
+    delete_sprint_entry(db=db, sprint_id=sprint_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("", response_model=SprintListResponse)

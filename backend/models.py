@@ -20,7 +20,7 @@ class Person(Base):
         nullable=False,
     )
 
-    entries = relationship("SprintEntry", back_populates="person")
+    entries = relationship("SprintEntry", back_populates="person", passive_deletes=True)
 
 
 class SprintEntry(Base):
