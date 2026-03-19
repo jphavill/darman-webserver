@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -60,6 +60,29 @@ class BestTimeRow(BaseModel):
 class BestTimesResponse(BaseModel):
     rows: list[BestTimeRow]
     total: int
+
+
+ComparisonMode = Literal["progression", "daily_best"]
+RunWindow = Literal["all", "10", "20", "50"]
+
+
+class SprintComparisonPoint(BaseModel):
+    x: int | str
+    y: int
+    label: str | None = None
+
+
+class SprintComparisonSeries(BaseModel):
+    person_id: int
+    person_name: str
+    points: list[SprintComparisonPoint]
+
+
+class SprintComparisonResponse(BaseModel):
+    mode: ComparisonMode
+    location: str | None
+    run_window: RunWindow
+    series: list[SprintComparisonSeries]
 
 
 class PhotoUpsertItem(BaseModel):

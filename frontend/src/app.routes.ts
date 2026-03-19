@@ -6,6 +6,13 @@ import { SprintPageComponent } from './app/pages/sprint-page/sprint-page.compone
 export const routes: Routes = [
   { path: '', component: HomePageComponent },
   { path: 'sprint', component: SprintPageComponent },
+  {
+    path: 'results/comparison',
+    loadComponent: () =>
+      import('./app/features/sprint-comparison/sprint-comparison-page.component').then(
+        (mod) => mod.SprintComparisonPageComponent
+      )
+  },
   { path: 'photogallery', component: PhotoGalleryPageComponent },
   { path: '**', redirectTo: '' }
 ];

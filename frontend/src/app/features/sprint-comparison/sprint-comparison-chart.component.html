@@ -1,0 +1,21 @@
+<section class="chart-card">
+  <div class="state" *ngIf="loading">Loading sprint comparison data...</div>
+  <div class="state" *ngIf="!loading && error">{{ error }}</div>
+  <div class="state" *ngIf="!loading && !error && !hasSelectedRunners">Select 1 to 4 runners to compare.</div>
+  <div class="state" *ngIf="!loading && !error && hasSelectedRunners && !hasData">
+    No sprint data matches the selected runners and location.
+  </div>
+
+  <div
+    #chartContainer
+    class="chart-host"
+    [class.is-hidden]="loading || !!error || !hasSelectedRunners || !hasData"
+  ></div>
+
+  <div class="legend" *ngIf="!loading && !error && hasSelectedRunners && hasData">
+    <div class="legend-item" *ngFor="let runner of legendRunners">
+      <span class="legend-swatch" [style.background]="runner.color"></span>
+      <span>{{ runner.personName }}</span>
+    </div>
+  </div>
+</section>

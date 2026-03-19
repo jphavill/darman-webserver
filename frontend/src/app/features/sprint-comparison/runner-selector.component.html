@@ -1,0 +1,19 @@
+<section class="runner-selector">
+  <h3>Runner Selector</h3>
+  <input
+    type="text"
+    [ngModel]="searchTerm"
+    (ngModelChange)="searchTermChange.emit($event)"
+    placeholder="Search runners by name"
+    aria-label="Search runners"
+  />
+
+  <ul class="runner-results">
+    <li *ngFor="let runner of filteredRunners">
+      <button type="button" [disabled]="!canAdd(runner)" (click)="addRunner.emit(runner)">
+        {{ isSelected(runner) ? 'Selected' : 'Add' }}
+      </button>
+      <span>{{ runner.name }}</span>
+    </li>
+  </ul>
+</section>

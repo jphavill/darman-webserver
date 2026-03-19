@@ -1,0 +1,108 @@
+.controls-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.55rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.65rem;
+  box-shadow: none;
+}
+
+.control-field {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.controls-panel span {
+  font-size: 0.75rem;
+  color: var(--accent-strong);
+}
+
+.controls-panel select {
+  width: 124px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 0.18rem 0.4rem;
+  border-radius: 0;
+  appearance: none;
+}
+
+.controls-panel small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  max-width: 170px;
+  line-height: 1.2;
+}
+
+.runner-limit {
+  color: #f7b267;
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.selected-runners-block {
+  flex: 1 1 290px;
+  min-width: 250px;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.selected-runners-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.selected-runners-header h3 {
+  font-size: 0.8rem;
+  color: var(--accent-strong);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.actions button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  padding: 0.22rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+app-runner-selector,
+app-selected-runner-list {
+  flex: 1 1 290px;
+  min-width: 250px;
+}
+
+@media (max-width: 760px) {
+  .controls-panel {
+    align-items: stretch;
+  }
+
+  .control-field,
+  .actions,
+  app-runner-selector,
+  app-selected-runner-list,
+  .selected-runners-block {
+    width: 100%;
+  }
+
+  .selected-runners-header {
+    flex-wrap: wrap;
+  }
+
+  .controls-panel select {
+    width: 100%;
+  }
+}

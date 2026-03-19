@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.routers.locations import router as locations_router
 from api.routers.people import router as people_router
 from api.routers.photos import router as photos_router
 from api.routers.sprints import router as sprints_router
@@ -23,5 +24,6 @@ app.add_middleware(
 
 app.include_router(system_router)
 app.include_router(people_router)
+app.include_router(locations_router)
 app.include_router(sprints_router)
 app.include_router(photos_router)

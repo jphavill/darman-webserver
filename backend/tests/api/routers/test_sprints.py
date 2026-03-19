@@ -13,6 +13,12 @@ def _delete(client, token: str, sprint_id: int):
     )
 
 
+def _get_person_id(client, query: str) -> int:
+    people_response = client.get("/v1/people", params={"q": query})
+    assert people_response.status_code == 200
+    return people_response.json()[0]["id"]
+
+
 def test_post_sprint_requires_auth(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     response = client.post(
@@ -263,3 +269,201 @@ def test_delete_sprint_removes_entry(client, monkeypatch):
     response = client.get("/v1/sprints")
     assert response.status_code == 200
     assert response.json()["total"] == 0
+
+
+def test_get_locations_returns_distinct_sorted_locations(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    _insert(
+        client,
+        "secret",
+        {"name": "Alex", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "UNB Track"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Alex", "sprint_time_ms": 10150, "sprint_date": "2026-03-02", "location": "UNB Track"},
+    )
+    _insert(
+        client,
+        "secret",
+        {
+            "name": "Jamie",
+            "sprint_time_ms": 9990,
+            "sprint_date": "2026-03-02",
+            "location": "Fredericton High School Track",
+        },
+    )
+
+    response = client.get("/v1/locations")
+    assert response.status_code == 200
+    assert response.json() == ["Fredericton High School Track", "UNB Track"]
+
+
+def test_get_sprint_comparison_progression_reindexes_points(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    _insert(
+        client,
+        "secret",
+        {"name": "Alex", "sprint_time_ms": 5200, "sprint_date": "2026-03-01", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Alex", "sprint_time_ms": 5100, "sprint_date": "2026-03-02", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Blake", "sprint_time_ms": 5300, "sprint_date": "2026-03-01", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Blake", "sprint_time_ms": 5250, "sprint_date": "2026-03-02", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Blake", "sprint_time_ms": 5210, "sprint_date": "2026-03-03", "location": "Track A"},
+    )
+
+    alex_id = _get_person_id(client, "alex")
+    blake_id = _get_person_id(client, "blake")
+
+    response = client.get(
+        "/v1/sprints/comparison",
+        params={"mode": "progression", "person_ids": f"{alex_id},{blake_id}", "run_window": "all"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "progression"
+    assert body["run_window"] == "all"
+    assert len(body["series"]) == 2
+
+    alex_series = next(series for series in body["series"] if series["person_name"] == "Alex")
+    assert [point["x"] for point in alex_series["points"]] == [1, 2]
+    assert [point["y"] for point in alex_series["points"]] == [5200, 5100]
+
+    blake_series = next(series for series in body["series"] if series["person_name"] == "Blake")
+    assert [point["x"] for point in blake_series["points"]] == [1, 2, 3]
+    assert [point["y"] for point in blake_series["points"]] == [5300, 5250, 5210]
+
+
+def test_get_sprint_comparison_progression_respects_run_window_and_location(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    for index in range(12):
+        location = "Track A" if index % 2 == 0 else "Track B"
+        _insert(
+            client,
+            "secret",
+            {
+                "name": "Alex",
+                "sprint_time_ms": 6000 - (index * 10),
+                "sprint_date": f"2026-03-{index + 1:02d}",
+                "location": location,
+            },
+        )
+
+    alex_id = _get_person_id(client, "alex")
+    response = client.get(
+        "/v1/sprints/comparison",
+        params={
+            "mode": "progression",
+            "person_ids": str(alex_id),
+            "location": "Track A",
+            "run_window": "10",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+
+    points = body["series"][0]["points"]
+    assert len(points) == 6
+    assert [point["y"] for point in points] == [6000, 5980, 5960, 5940, 5920, 5900]
+
+
+def test_get_sprint_comparison_progression_supports_all_run_windows(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    for index in range(60):
+        _insert(
+            client,
+            "secret",
+            {
+                "name": "Taylor",
+                "sprint_time_ms": 7000 - index,
+                "sprint_date": f"2026-04-{(index % 28) + 1:02d}",
+                "location": "Track Z",
+            },
+        )
+
+    taylor_id = _get_person_id(client, "taylor")
+
+    expected_lengths = {
+        "all": 60,
+        "10": 10,
+        "20": 20,
+        "50": 50,
+    }
+    for run_window, expected in expected_lengths.items():
+        response = client.get(
+            "/v1/sprints/comparison",
+            params={
+                "mode": "progression",
+                "person_ids": str(taylor_id),
+                "location": "Track Z",
+                "run_window": run_window,
+            },
+        )
+        assert response.status_code == 200
+        points = response.json()["series"][0]["points"]
+        assert len(points) == expected
+
+
+def test_get_sprint_comparison_daily_best_returns_one_point_per_day(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    _insert(
+        client,
+        "secret",
+        {"name": "Casey", "sprint_time_ms": 5050, "sprint_date": "2026-03-01", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Casey", "sprint_time_ms": 4990, "sprint_date": "2026-03-01", "location": "Track A"},
+    )
+    _insert(
+        client,
+        "secret",
+        {"name": "Casey", "sprint_time_ms": 4980, "sprint_date": "2026-03-02", "location": "Track B"},
+    )
+
+    casey_id = _get_person_id(client, "casey")
+
+    response = client.get(
+        "/v1/sprints/comparison",
+        params={"mode": "daily_best", "person_ids": str(casey_id), "location": "Track A"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "daily_best"
+    points = body["series"][0]["points"]
+    assert points == [{"x": "2026-03-01", "y": 4990, "label": "2026-03-01"}]
+
+
+def test_get_sprint_comparison_rejects_invalid_or_too_many_person_ids(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    _insert(
+        client,
+        "secret",
+        {"name": "Alex", "sprint_time_ms": 5050, "sprint_date": "2026-03-01", "location": "Track A"},
+    )
+
+    invalid = client.get("/v1/sprints/comparison", params={"person_ids": "999999", "mode": "progression"})
+    assert invalid.status_code == 422
+
+    too_many = client.get(
+        "/v1/sprints/comparison",
+        params={"person_ids": "1,2,3,4,5", "mode": "progression"},
+    )
+    assert too_many.status_code == 422
+    assert too_many.json()["detail"] == "compare up to 4 people at once"

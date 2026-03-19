@@ -1,14 +1,22 @@
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from api.dependencies.auth import require_write_token
 from database import get_db
 from schemas import BestTimesResponse, SprintCreateRequest, SprintListResponse, SprintRow, SprintUpdateRequest
-from services.sprints import create_sprint_entry, delete_sprint_entry, list_best_times, list_sprints, update_sprint_entry
+from schemas import ComparisonMode, RunWindow, SprintComparisonResponse
+from services.sprints import (
+    create_sprint_entry,
+    delete_sprint_entry,
+    list_best_times,
+    list_sprint_comparison,
+    list_sprints,
+    update_sprint_entry,
+)
 
 
 router = APIRouter(prefix="/v1/sprints", tags=["sprints"])
@@ -98,3 +106,39 @@ def list_best_times_route(
         date_from=date_from,
         date_to=date_to,
     )
+
+
+@router.get("/comparison", response_model=SprintComparisonResponse)
+def list_sprint_comparison_route(
+    mode: ComparisonMode = Query(default="progression"),
+    person_ids: str = Query(..., min_length=1),
+    location: str | None = None,
+    run_window: RunWindow = Query(default="all"),
+    db: Session = Depends(get_db),
+) -> SprintComparisonResponse:
+    parsed_person_ids = _parse_person_ids(person_ids)
+    return list_sprint_comparison(
+        db=db,
+        mode=mode,
+        person_ids=parsed_person_ids,
+        location=location,
+        run_window=run_window,
+    )
+
+
+def _parse_person_ids(raw_person_ids: str) -> list[int]:
+    values = [chunk.strip() for chunk in raw_person_ids.split(",")]
+    if any(not value for value in values):
+        raise HTTPException(status_code=422, detail="person_ids must be a comma-separated list of integers")
+
+    try:
+        parsed = [int(value) for value in values]
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="person_ids must be a comma-separated list of integers") from exc
+
+    if len(parsed) == 0:
+        raise HTTPException(status_code=422, detail="person_ids must include at least one id")
+    if len(parsed) > 4:
+        raise HTTPException(status_code=422, detail="compare up to 4 people at once")
+
+    return parsed

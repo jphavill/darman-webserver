@@ -1,0 +1,40 @@
+.selected-runners {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.selected-runners ul {
+  list-style: none;
+  display: grid;
+  gap: 0.32rem;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.selected-runners li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.color-input {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.selected-runners button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  padding: 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}

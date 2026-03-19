@@ -1,0 +1,53 @@
+.runner-selector {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.runner-selector h3 {
+  font-size: 0.8rem;
+  color: var(--accent-strong);
+}
+
+.runner-selector input {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 0.35rem 0.45rem;
+  border-radius: 0;
+  font-size: 0.82rem;
+}
+
+.runner-results {
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+  max-height: 120px;
+  overflow: auto;
+  padding-right: 0.1rem;
+}
+
+.runner-results li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.runner-results button {
+  min-width: 48px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  padding: 0.12rem 0.4rem;
+  font-size: 0.73rem;
+  cursor: pointer;
+}
+
+.runner-results span {
+  font-size: 0.82rem;
+}
+
+.runner-results button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
