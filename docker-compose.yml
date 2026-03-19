@@ -52,6 +52,7 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     restart: unless-stopped
+    init: true
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -60,7 +61,7 @@ services:
       - ADMIN_API_TOKEN=${ADMIN_API_TOKEN}
     volumes:
       - ./backend:/app
-    command: sh -c "alembic -c alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "alembic -c alembic.ini upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8000"
     networks:
       - public_web
     depends_on:
