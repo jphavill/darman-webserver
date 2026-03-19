@@ -22,9 +22,26 @@ export class RunnerSelectorComponent {
   get filteredRunners(): AvailableRunner[] {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
     if (!normalizedSearch) {
-      return this.runners;
+      return [];
     }
     return this.runners.filter((runner) => runner.name.toLowerCase().includes(normalizedSearch));
+  }
+
+  get addCandidate(): AvailableRunner | null {
+    const normalizedSearch = this.searchTerm.trim().toLowerCase();
+    if (!normalizedSearch) {
+      return null;
+    }
+
+    const unselectedMatches = this.filteredRunners.filter((runner) => !this.isSelected(runner));
+    const exactMatch = unselectedMatches.find((runner) => runner.name.toLowerCase() === normalizedSearch);
+    if (exactMatch) {
+      return exactMatch;
+    }
+    if (unselectedMatches.length === 1) {
+      return unselectedMatches[0];
+    }
+    return null;
   }
 
   isSelected(runner: AvailableRunner): boolean {
@@ -33,5 +50,15 @@ export class RunnerSelectorComponent {
 
   canAdd(runner: AvailableRunner): boolean {
     return !this.isSelected(runner) && this.selectedPersonIds.length < this.maxSelected;
+  }
+
+  addFromSearch(): void {
+    const candidate = this.addCandidate;
+    if (!candidate || !this.canAdd(candidate)) {
+      return;
+    }
+
+    this.addRunner.emit(candidate);
+    this.searchTermChange.emit('');
   }
 }

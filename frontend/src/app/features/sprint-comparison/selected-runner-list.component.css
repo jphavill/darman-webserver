@@ -5,10 +5,9 @@
 
 .selected-runners ul {
   list-style: none;
-  display: grid;
-  gap: 0.32rem;
-  max-height: 120px;
-  overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .selected-runners li {
@@ -17,6 +16,11 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.82rem;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  padding: 0.28rem 0.35rem;
+  min-width: 280px;
+  flex: 1 1 320px;
 }
 
 .color-input {
@@ -37,4 +41,11 @@
   padding: 0.12rem 0.45rem;
   font-size: 0.72rem;
   cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .selected-runners li {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
 }

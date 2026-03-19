@@ -1,19 +1,27 @@
 <section class="runner-selector">
   <h3>Runner Selector</h3>
-  <input
-    type="text"
-    [ngModel]="searchTerm"
-    (ngModelChange)="searchTermChange.emit($event)"
-    placeholder="Search runners by name"
-    aria-label="Search runners"
-  />
 
-  <ul class="runner-results">
-    <li *ngFor="let runner of filteredRunners">
-      <button type="button" [disabled]="!canAdd(runner)" (click)="addRunner.emit(runner)">
-        {{ isSelected(runner) ? 'Selected' : 'Add' }}
-      </button>
-      <span>{{ runner.name }}</span>
-    </li>
-  </ul>
+  <div class="runner-search-row">
+    <input
+      type="text"
+      list="runner-options"
+      [ngModel]="searchTerm"
+      (ngModelChange)="searchTermChange.emit($event)"
+      placeholder="Type runner name"
+      aria-label="Search runners"
+    />
+    <datalist id="runner-options">
+      <option *ngFor="let runner of filteredRunners" [value]="runner.name"></option>
+    </datalist>
+
+    <button
+      type="button"
+      [disabled]="!addCandidate || selectedPersonIds.length >= maxSelected"
+      (click)="addFromSearch()"
+    >
+      Add
+    </button>
+  </div>
+
+  <small *ngIf="searchTerm && !addCandidate">Type the full name or narrow to one runner.</small>
 </section>

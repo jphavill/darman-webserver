@@ -1,17 +1,21 @@
 <div class="container">
   <app-site-header></app-site-header>
 
-  <app-project-section
-    title="Software Projects"
-    [projects]="softwareProjects"
-    (openProjectRequested)="openProject($event)"
-  ></app-project-section>
+  @if (softwareProjects.length > 0) {
+    <app-project-section
+      title="Software Projects"
+      [projects]="softwareProjects"
+      (openProjectRequested)="openProject($event)"
+    ></app-project-section>
+  }
 
-  <app-project-section
-    title="Physical Projects"
-    [projects]="physicalProjects"
-    (openProjectRequested)="openProject($event)"
-  ></app-project-section>
+  @if (physicalProjects.length > 0) {
+    <app-project-section
+      title="Physical Projects"
+      [projects]="physicalProjects"
+      (openProjectRequested)="openProject($event)"
+    ></app-project-section>
+  }
 
   <app-site-footer></app-site-footer>
 

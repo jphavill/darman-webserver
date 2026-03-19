@@ -23,12 +23,17 @@
 .controls-panel select {
   width: 124px;
   height: 30px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-soft);
+  color: #ffffff;
   padding: 0.18rem 0.4rem;
   border-radius: 0;
   appearance: none;
+}
+
+.controls-panel select option {
+  background: var(--surface);
+  color: #ffffff;
 }
 
 .controls-panel small {
