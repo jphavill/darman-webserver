@@ -11,7 +11,9 @@ class Person(Base):
     __tablename__ = "people"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -19,7 +21,6 @@ class Person(Base):
     )
 
     entries = relationship("SprintEntry", back_populates="person")
-    best_time = relationship("PersonBestTime", back_populates="person", uselist=False)
 
 
 class SprintEntry(Base):
@@ -42,31 +43,6 @@ class SprintEntry(Base):
     )
 
     person = relationship("Person", back_populates="entries")
-    best_for_person = relationship("PersonBestTime", back_populates="entry", uselist=False)
-
-
-class PersonBestTime(Base):
-    __tablename__ = "person_best_times"
-    __table_args__ = (CheckConstraint("best_time_ms > 0", name="ck_person_best_times_positive"),)
-
-    person_id: Mapped[int] = mapped_column(
-        ForeignKey("people.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    sprint_entry_id: Mapped[int] = mapped_column(
-        ForeignKey("sprint_entries.id", ondelete="CASCADE"),
-        unique=True,
-        nullable=False,
-    )
-    best_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
-    updated_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )
-
-    person = relationship("Person", back_populates="best_time")
-    entry = relationship("SprintEntry", back_populates="best_for_person")
 
 
 class Photo(Base):

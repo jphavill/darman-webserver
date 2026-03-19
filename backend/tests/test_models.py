@@ -5,11 +5,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from models import Person, PersonBestTime, Photo, SprintEntry
+from models import Person, Photo, SprintEntry
 
 
 def test_model_relationships_persist(db_session):
-    person = Person(name="Jason")
+    person = Person(name="Jason", normalized_name="jason", is_active=True)
     db_session.add(person)
     db_session.flush()
 
@@ -22,17 +22,15 @@ def test_model_relationships_persist(db_session):
     db_session.add(entry)
     db_session.flush()
 
-    best = PersonBestTime(person_id=person.id, sprint_entry_id=entry.id, best_time_ms=entry.sprint_time_ms)
-    db_session.add(best)
     db_session.commit()
 
     loaded_person = db_session.query(Person).filter_by(name="Jason").one()
     assert loaded_person.entries[0].location == "Track A"
-    assert loaded_person.best_time.best_time_ms == 10234
+    assert loaded_person.normalized_name == "jason"
 
 
 def test_sprint_time_positive_constraint(db_session):
-    person = Person(name="Robin")
+    person = Person(name="Robin", normalized_name="robin", is_active=True)
     db_session.add(person)
     db_session.flush()
 
@@ -44,6 +42,17 @@ def test_sprint_time_positive_constraint(db_session):
     )
     db_session.add(invalid_entry)
 
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+
+    db_session.rollback()
+
+
+def test_people_normalized_name_is_unique(db_session):
+    db_session.add(Person(name="Jason", normalized_name="jason", is_active=True))
+    db_session.commit()
+
+    db_session.add(Person(name="JASON", normalized_name="jason", is_active=True))
     with pytest.raises(IntegrityError):
         db_session.commit()
 

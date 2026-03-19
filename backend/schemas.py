@@ -2,14 +2,30 @@ from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class SprintCreateRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
+    person_id: int | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=120)
     sprint_time_ms: int = Field(gt=0)
     sprint_date: date
     location: str = Field(min_length=1, max_length=160)
+
+    @model_validator(mode="after")
+    def validate_person_identity(self) -> "SprintCreateRequest":
+        if self.person_id is None and self.name is None:
+            raise ValueError("either person_id or name must be provided")
+        if self.name is not None and not _collapse_whitespace(self.name):
+            raise ValueError("name cannot be empty")
+        return self
+
+
+class SprintUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    sprint_time_ms: Optional[int] = Field(default=None, gt=0)
+    sprint_date: Optional[date] = None
+    location: Optional[str] = Field(default=None, min_length=1, max_length=160)
 
 
 class SprintRow(BaseModel):
@@ -24,6 +40,11 @@ class SprintRow(BaseModel):
 class SprintListResponse(BaseModel):
     rows: list[SprintRow]
     total: int
+
+
+class PersonRow(BaseModel):
+    id: int
+    name: str
 
 
 class BestTimeRow(BaseModel):
@@ -79,3 +100,7 @@ class PhotoRow(BaseModel):
 class PhotoListResponse(BaseModel):
     rows: list[PhotoRow]
     total: int
+
+
+def _collapse_whitespace(value: str) -> str:
+    return " ".join(value.strip().split())

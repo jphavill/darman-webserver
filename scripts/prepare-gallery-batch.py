@@ -390,7 +390,7 @@ def main() -> int:
     print(f"Manifest written: {manifest_path}")
     print(f"Manifest rows: {len(merged_manifest_rows)} (new/updated in this batch: {len(manifest_rows)})")
     print(f"Resolved metadata written: {metadata_out}")
-    print(f"Next: scp {media_dir}/* <server>:/path/to/media/gallery/")
+    print(f"Next: scp {media_dir}/* jh://home/jphavill/dockerStuff/darman-webserver/media/gallery/")
     return 0
 
 

@@ -24,6 +24,16 @@ def test_sprint_create_request_rejects_invalid_time():
         SprintCreateRequest(name="Sam", sprint_time_ms=0, sprint_date=date(2026, 3, 10), location="Anywhere")
 
 
+def test_sprint_create_request_requires_person_id_or_name():
+    with pytest.raises(ValidationError):
+        SprintCreateRequest(sprint_time_ms=9988, sprint_date=date(2026, 3, 10), location="Anywhere")
+
+
+def test_sprint_create_request_rejects_blank_name_after_normalization():
+    with pytest.raises(ValidationError):
+        SprintCreateRequest(name="   ", sprint_time_ms=9988, sprint_date=date(2026, 3, 10), location="Anywhere")
+
+
 def test_sprint_list_response_shape():
     row = SprintRow(
         id=1,

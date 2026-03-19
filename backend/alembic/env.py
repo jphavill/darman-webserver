@@ -7,7 +7,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from database import Base
-from models import Person, PersonBestTime, SprintEntry
+from models import Person, Photo, SprintEntry
 
 
 config = context.config
