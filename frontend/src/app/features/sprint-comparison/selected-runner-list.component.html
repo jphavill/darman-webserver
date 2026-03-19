@@ -1,6 +1,13 @@
 <section class="selected-runners">
   <ul>
     <li *ngFor="let runner of runners">
+      <label class="visibility-toggle">
+        <input
+          type="checkbox"
+          [checked]="runner.visible"
+          (change)="visibilityChange.emit({ personId: runner.personId, visible: $any($event.target).checked })"
+        />
+      </label>
       <input
         class="color-input"
         type="color"
@@ -9,14 +16,6 @@
         (change)="colorChange.emit({ personId: runner.personId, color: $any($event.target).value })"
       />
       <span>{{ runner.personName }}</span>
-      <label class="visibility-toggle">
-        <input
-          type="checkbox"
-          [checked]="runner.visible"
-          (change)="visibilityChange.emit({ personId: runner.personId, visible: $any($event.target).checked })"
-        />
-        Show
-      </label>
       <button
         type="button"
         class="remove-button"
