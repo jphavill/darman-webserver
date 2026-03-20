@@ -40,7 +40,13 @@ export class SprintTimesGridComponent {
   };
 
   readonly columnDefs: ColDef<SprintRow>[] = [
-    { field: 'name', headerName: 'Name', filter: 'agTextColumnFilter', sort: 'asc' },
+    {
+      field: 'name',
+      headerName: 'Name',
+      filter: 'agTextColumnFilter',
+      sort: 'asc',
+      valueFormatter: (params) => this.formatName(params.value as string)
+    },
     {
       field: 'sprint_time_ms',
       headerName: 'Sprint Time',
@@ -179,5 +185,13 @@ export class SprintTimesGridComponent {
     }
 
     return parsed.toLocaleDateString();
+  }
+
+  private formatName(value: string): string {
+    if (!value) {
+      return '-';
+    }
+
+    return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
   }
 }

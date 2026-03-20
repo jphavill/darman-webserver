@@ -1,7 +1,7 @@
 .chart-card {
   border: 1px solid var(--border);
   border-radius: 0.9rem;
-  background: radial-gradient(circle at top right, rgba(143, 184, 232, 0.12), transparent 45%), var(--surface);
+  background: var(--surface);
   box-shadow: var(--shadow-soft);
   padding: 0.9rem;
   display: grid;

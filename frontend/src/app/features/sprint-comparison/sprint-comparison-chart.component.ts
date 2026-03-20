@@ -103,7 +103,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
     return {
       animationDuration: 250,
-      grid: { left: 84, right: 24, top: 24, bottom: 56, containLabel: true },
+      grid: { left: 24, right: 24, top: 48, bottom: 28, containLabel: true },
       tooltip: {
         trigger: 'axis',
         formatter: (rawParams) => {
@@ -133,7 +133,8 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
       yAxis: {
         type: 'value',
         name: 'Sprint Time',
-        nameGap: 16,
+        nameLocation: 'end',
+        nameGap: 24,
         axisLabel: {
           color: '#b5beca',
           formatter: (value: number) => this.formatSprintMs(value)
@@ -177,7 +178,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
     return {
       animationDuration: 250,
-      grid: { left: 84, right: 24, top: 24, bottom: 56, containLabel: true },
+      grid: { left: 84, right: 24, top: 48, bottom: 56, containLabel: true },
       tooltip: {
         trigger: 'axis',
         formatter: (rawParams) => {
@@ -201,7 +202,8 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
       yAxis: {
         type: 'value',
         name: 'Sprint Time',
-        nameGap: 16,
+        nameLocation: 'end',
+        nameGap: 24,
         axisLabel: {
           color: '#b5beca',
           formatter: (value: number) => this.formatSprintMs(value)
