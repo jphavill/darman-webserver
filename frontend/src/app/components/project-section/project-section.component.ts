@@ -13,8 +13,4 @@ export class ProjectSectionComponent {
   @Input({ required: true }) title!: string;
   @Input({ required: true }) projects!: Project[];
   @Output() openProjectRequested = new EventEmitter<ProjectOpenRequest>();
-
-  forwardOpenRequest(request: ProjectOpenRequest): void {
-    this.openProjectRequested.emit(request);
-  }
 }

@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from core.errors import NotFoundAppError
+from core.text import collapse_whitespace
 from models import Photo
 from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow, PhotoUpdateRequest
 
@@ -22,29 +23,33 @@ def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
 
 
 def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoListResponse:
-    for item in payload.rows:
-        statement = insert(Photo).values(
-            id=item.id,
-            alt_text=item.alt_text.strip(),
-            caption=item.caption.strip(),
-            thumb_url=item.thumb_url.strip(),
-            full_url=item.full_url.strip(),
-            captured_at=item.captured_at,
-            is_published=item.is_published,
-        )
-        statement = statement.on_conflict_do_update(
-            index_elements=[Photo.id],
-            set_={
-                "alt_text": item.alt_text.strip(),
-                "caption": item.caption.strip(),
-                "thumb_url": item.thumb_url.strip(),
-                "full_url": item.full_url.strip(),
-                "captured_at": item.captured_at,
-                "is_published": item.is_published,
-                "updated_at": func.now(),
-            },
-        )
-        db.execute(statement)
+    rows = [
+        {
+            "id": item.id,
+            "alt_text": collapse_whitespace(item.alt_text),
+            "caption": collapse_whitespace(item.caption),
+            "thumb_url": collapse_whitespace(item.thumb_url),
+            "full_url": collapse_whitespace(item.full_url),
+            "captured_at": item.captured_at,
+            "is_published": item.is_published,
+        }
+        for item in payload.rows
+    ]
+
+    statement = insert(Photo).values(rows)
+    statement = statement.on_conflict_do_update(
+        index_elements=[Photo.id],
+        set_={
+            "alt_text": statement.excluded.alt_text,
+            "caption": statement.excluded.caption,
+            "thumb_url": statement.excluded.thumb_url,
+            "full_url": statement.excluded.full_url,
+            "captured_at": statement.excluded.captured_at,
+            "is_published": statement.excluded.is_published,
+            "updated_at": func.now(),
+        },
+    )
+    db.execute(statement)
 
     db.commit()
 
@@ -54,16 +59,16 @@ def batch_upsert_photos(db: Session, payload: PhotoBatchUpsertRequest) -> PhotoL
 def update_photo(db: Session, photo_id: UUID, payload: PhotoUpdateRequest) -> PhotoRow:
     record = db.query(Photo).filter(Photo.id == photo_id).one_or_none()
     if record is None:
-        raise HTTPException(status_code=404, detail="Photo not found")
+        raise NotFoundAppError("Photo not found")
 
     if payload.alt_text is not None:
-        record.alt_text = payload.alt_text.strip()
+        record.alt_text = collapse_whitespace(payload.alt_text)
     if payload.caption is not None:
-        record.caption = payload.caption.strip()
+        record.caption = collapse_whitespace(payload.caption)
     if payload.thumb_url is not None:
-        record.thumb_url = payload.thumb_url.strip()
+        record.thumb_url = collapse_whitespace(payload.thumb_url)
     if payload.full_url is not None:
-        record.full_url = payload.full_url.strip()
+        record.full_url = collapse_whitespace(payload.full_url)
     if payload.captured_at is not None:
         record.captured_at = payload.captured_at
     if payload.is_published is not None:
@@ -78,7 +83,7 @@ def update_photo(db: Session, photo_id: UUID, payload: PhotoUpdateRequest) -> Ph
 def delete_photo(db: Session, photo_id: UUID) -> None:
     record = db.query(Photo).filter(Photo.id == photo_id).one_or_none()
     if record is None:
-        raise HTTPException(status_code=404, detail="Photo not found")
+        raise NotFoundAppError("Photo not found")
 
     db.delete(record)
     db.commit()

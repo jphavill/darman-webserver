@@ -10,7 +10,8 @@ import {
   ViewChild
 } from '@angular/core';
 import { ECharts, EChartsOption, init } from 'echarts';
-import { ComparisonMode, ComparisonSeries, SelectedRunner } from './sprint-comparison.models';
+import { ComparisonMode, ComparisonSeries, SelectedRunner } from '../sprint-comparison.models';
+import { formatSprintMs } from '../../../shared/format/sprint-format';
 
 interface ProgressionDatum {
   value: number;
@@ -112,7 +113,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
             .filter((item) => item.data)
             .map((item) => {
               const datum = item.data as ProgressionDatum;
-              return `${item.marker} ${item.seriesName}: Attempt ${datum.attempt} - ${this.formatSprintMs(datum.value)}`;
+              return `${item.marker} ${item.seriesName}: Attempt ${datum.attempt} - ${formatSprintMs(datum.value)}`;
             });
 
           if (rows.length === 0) {
@@ -137,7 +138,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
         nameGap: 24,
         axisLabel: {
           color: '#b5beca',
-          formatter: (value: number) => this.formatSprintMs(value)
+          formatter: (value: number) => formatSprintMs(value)
         },
         splitLine: { lineStyle: { color: '#2d3440' } }
       },
@@ -186,7 +187,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
           const dateLabel = String((params[0] as { axisValueLabel?: string } | undefined)?.axisValueLabel ?? params[0]?.name ?? '');
           const rows = params
             .filter((item) => item.data != null)
-            .map((item) => `${item.marker} ${item.seriesName}: ${this.formatSprintMs(Number(item.data))}`);
+            .map((item) => `${item.marker} ${item.seriesName}: ${formatSprintMs(Number(item.data))}`);
           return [dateLabel, ...rows].join('<br/>');
         }
       },
@@ -206,7 +207,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
         nameGap: 24,
         axisLabel: {
           color: '#b5beca',
-          formatter: (value: number) => this.formatSprintMs(value)
+          formatter: (value: number) => formatSprintMs(value)
         },
         splitLine: { lineStyle: { color: '#2d3440' } }
       },
@@ -229,9 +230,5 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
   private getRunnerColor(personId: number): string {
     return this.selectedRunners.find((runner) => runner.personId === personId)?.color ?? '#8fb8e8';
-  }
-
-  private formatSprintMs(ms: number): string {
-    return `${(ms / 1000).toFixed(3)} s`;
   }
 }

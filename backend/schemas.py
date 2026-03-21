@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
+from core.text import collapse_whitespace
+
 
 class SprintCreateRequest(BaseModel):
     person_id: int | None = None
@@ -22,10 +24,19 @@ class SprintCreateRequest(BaseModel):
 
 
 class SprintUpdateRequest(BaseModel):
+    person_id: Optional[int] = Field(default=None, gt=0)
     name: Optional[str] = Field(default=None, min_length=1, max_length=120)
     sprint_time_ms: Optional[int] = Field(default=None, gt=0)
     sprint_date: Optional[date] = None
     location: Optional[str] = Field(default=None, min_length=1, max_length=160)
+
+    @model_validator(mode="after")
+    def validate_person_identity_update(self) -> "SprintUpdateRequest":
+        if self.person_id is not None and self.name is not None:
+            raise ValueError("provide either person_id or name, not both")
+        if self.name is not None and not _collapse_whitespace(self.name):
+            raise ValueError("name cannot be empty")
+        return self
 
 
 class SprintRow(BaseModel):
@@ -42,9 +53,48 @@ class SprintListResponse(BaseModel):
     total: int
 
 
+SortDirection = Literal["asc", "desc"]
+SprintSortBy = Literal["name", "sprint_time_ms", "sprint_date", "location", "created_at"]
+BestSortBy = Literal["name", "best_time_ms", "sprint_date", "location", "updated_at"]
+
+
+class SprintListQuery(BaseModel):
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
+    sort_by: SprintSortBy = "sprint_date"
+    sort_dir: SortDirection = "desc"
+    name: str | None = None
+    location: str | None = None
+    date_from: date | None = None
+    date_to: date | None = None
+    min_time_ms: int | None = Field(default=None, gt=0)
+    max_time_ms: int | None = Field(default=None, gt=0)
+
+
+class BestTimesQuery(BaseModel):
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
+    sort_by: BestSortBy = "best_time_ms"
+    sort_dir: SortDirection = "asc"
+    name: str | None = None
+    location: str | None = None
+    date_from: date | None = None
+    date_to: date | None = None
+
+
 class PersonRow(BaseModel):
     id: int
     name: str
+
+
+class PersonCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+    @model_validator(mode="after")
+    def validate_name(self) -> "PersonCreateRequest":
+        if not _collapse_whitespace(self.name):
+            raise ValueError("name cannot be empty")
+        return self
 
 
 class BestTimeRow(BaseModel):
@@ -60,6 +110,11 @@ class BestTimeRow(BaseModel):
 class BestTimesResponse(BaseModel):
     rows: list[BestTimeRow]
     total: int
+
+
+class PeopleListQuery(BaseModel):
+    q: str | None = None
+    limit: int = Field(default=20, ge=1, le=100)
 
 
 ComparisonMode = Literal["progression", "daily_best"]
@@ -83,6 +138,25 @@ class SprintComparisonResponse(BaseModel):
     location: str | None
     run_window: RunWindow
     series: list[SprintComparisonSeries]
+
+
+class SprintComparisonQuery(BaseModel):
+    mode: ComparisonMode = "progression"
+    person_ids: str = Field(min_length=1)
+    location: str | None = None
+    run_window: RunWindow = "all"
+
+    def parsed_person_ids(self) -> list[int]:
+        values = [chunk.strip() for chunk in self.person_ids.split(",")]
+        if any(not value for value in values):
+            raise ValueError("person_ids must be a comma-separated list of integers")
+
+        try:
+            parsed = [int(value) for value in values]
+        except ValueError as exc:
+            raise ValueError("person_ids must be a comma-separated list of integers") from exc
+
+        return parsed
 
 
 class PhotoUpsertItem(BaseModel):
@@ -125,5 +199,10 @@ class PhotoListResponse(BaseModel):
     total: int
 
 
+class PhotoListQuery(BaseModel):
+    limit: int = Field(default=60, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
+
+
 def _collapse_whitespace(value: str) -> str:
-    return " ".join(value.strip().split())
+    return collapse_whitespace(value)

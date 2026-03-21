@@ -13,6 +13,22 @@ def _delete(client, token: str, sprint_id: int):
     )
 
 
+def _update(client, token: str, sprint_id: int, payload: dict):
+    return client.post(
+        f"/v1/sprints/{sprint_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json=payload,
+    )
+
+
+def _patch_update(client, token: str, sprint_id: int, payload: dict):
+    return client.patch(
+        f"/v1/sprints/{sprint_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json=payload,
+    )
+
+
 def _get_person_id(client, query: str) -> int:
     people_response = client.get("/v1/people", params={"q": query})
     assert people_response.status_code == 200
@@ -156,6 +172,166 @@ def test_post_sprint_rejects_invalid_person_id(client, monkeypatch):
             "location": "Track A",
         },
     )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "person_id is invalid"
+
+
+def test_update_sprint_updates_runner_by_existing_name(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    original = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    _insert(
+        client,
+        "secret",
+        {
+            "name": "Jamie",
+            "sprint_time_ms": 10300,
+            "sprint_date": "2026-03-01",
+            "location": "Track B",
+        },
+    )
+
+    response = _update(client, "secret", original.json()["id"], {"name": "Jamie"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Jamie"
+
+
+def test_patch_sprint_updates_runner_by_existing_name(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    original = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    _insert(
+        client,
+        "secret",
+        {
+            "name": "Jamie",
+            "sprint_time_ms": 10300,
+            "sprint_date": "2026-03-01",
+            "location": "Track B",
+        },
+    )
+
+    response = _patch_update(client, "secret", original.json()["id"], {"name": "Jamie"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Jamie"
+
+
+def test_update_sprint_supports_person_id(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    original = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    _insert(
+        client,
+        "secret",
+        {
+            "name": "Jamie",
+            "sprint_time_ms": 10300,
+            "sprint_date": "2026-03-01",
+            "location": "Track B",
+        },
+    )
+    jamie_id = _get_person_id(client, "jam")
+
+    response = _update(client, "secret", original.json()["id"], {"person_id": jamie_id})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Jamie"
+
+
+def test_update_sprint_rejects_unknown_name(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    created = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+
+    response = _update(client, "secret", created.json()["id"], {"name": "New Person"})
+    assert response.status_code == 422
+    assert response.json()["detail"] == "person name does not exist"
+
+
+def test_update_sprint_rejects_name_and_person_id(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    created = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+    _insert(
+        client,
+        "secret",
+        {
+            "name": "Jamie",
+            "sprint_time_ms": 10300,
+            "sprint_date": "2026-03-01",
+            "location": "Track B",
+        },
+    )
+    jamie_id = _get_person_id(client, "jam")
+
+    response = _update(
+        client,
+        "secret",
+        created.json()["id"],
+        {"name": "Jamie", "person_id": jamie_id},
+    )
+    assert response.status_code == 422
+
+
+def test_update_sprint_rejects_inactive_person_id(client, monkeypatch, db_session):
+    from models import Person
+
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    created = _insert(
+        client,
+        "secret",
+        {
+            "name": "Alex",
+            "sprint_time_ms": 10500,
+            "sprint_date": "2026-03-01",
+            "location": "Track A",
+        },
+    )
+
+    inactive = Person(name="Inactive Runner", normalized_name="inactive runner", is_active=False)
+    db_session.add(inactive)
+    db_session.commit()
+
+    response = _update(client, "secret", created.json()["id"], {"person_id": inactive.id})
     assert response.status_code == 422
     assert response.json()["detail"] == "person_id is invalid"
 

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from api.dependencies.auth import require_write_token
 from database import get_db
-from schemas import PersonRow
-from services.people import delete_person, list_people
+from schemas import PeopleListQuery, PersonCreateRequest, PersonRow
+from services.people import create_person, delete_person, list_people
 
 
 router = APIRouter(prefix="/v1/people", tags=["people"])
@@ -13,11 +13,19 @@ router = APIRouter(prefix="/v1/people", tags=["people"])
 
 @router.get("", response_model=list[PersonRow])
 def list_people_route(
-    q: str | None = None,
-    limit: int = Query(default=20, ge=1, le=100),
+    query: PeopleListQuery = Depends(),
     db: Session = Depends(get_db),
 ) -> list[PersonRow]:
-    return list_people(db=db, q=q, limit=limit)
+    return list_people(db=db, q=query.q, limit=query.limit)
+
+
+@router.post("", response_model=PersonRow)
+def create_person_route(
+    payload: PersonCreateRequest,
+    _auth: None = Depends(require_write_token),
+    db: Session = Depends(get_db),
+) -> PersonRow:
+    return create_person(db=db, payload=payload)
 
 
 @router.delete("/{person_id}", status_code=status.HTTP_204_NO_CONTENT)

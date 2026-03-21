@@ -8,6 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from core.settings import get_settings
+
 
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -126,3 +128,10 @@ def client(db_session) -> Generator[TestClient, None, None]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_settings_cache() -> Generator[None, None, None]:
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()

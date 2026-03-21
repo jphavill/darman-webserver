@@ -4,13 +4,13 @@
 
 <section class="comparison-layout">
   <app-sprint-comparison-controls
-    [mode]="state.mode"
-    [runWindow]="state.runWindow"
-    [location]="state.location"
-    [runnerSearch]="state.runnerSearch"
-    [availableRunners]="state.availableRunners"
-    [availableLocations]="state.availableLocations"
-    [selectedRunners]="state.selectedRunners"
+    [mode]="state().mode"
+    [runWindow]="state().runWindow"
+    [location]="state().location"
+    [runnerSearch]="state().runnerSearch"
+    [availableRunners]="state().availableRunners"
+    [availableLocations]="state().availableLocations"
+    [selectedRunners]="state().selectedRunners"
     [maxRunners]="maxRunnerCount"
     (modeChange)="onModeChange($event)"
     (locationChange)="onLocationChange($event)"
@@ -25,10 +25,10 @@
   ></app-sprint-comparison-controls>
 
   <app-sprint-comparison-chart
-    [mode]="state.mode"
-    [series]="state.series"
-    [selectedRunners]="state.selectedRunners"
-    [loading]="state.loading"
-    [error]="state.error"
+    [mode]="state().mode"
+    [series]="state().series"
+    [selectedRunners]="state().selectedRunners"
+    [loading]="state().loading"
+    [error]="state().error"
   ></app-sprint-comparison-chart>
 </section>

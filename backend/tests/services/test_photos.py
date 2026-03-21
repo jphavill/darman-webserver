@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
 
+from core.errors import NotFoundAppError
 from schemas import PhotoBatchUpsertRequest, PhotoUpdateRequest, PhotoUpsertItem
 from services.photos import batch_upsert_photos, delete_photo, list_photos, update_photo
 
@@ -207,7 +207,7 @@ def test_delete_photo_removes_record(db_session):
 def test_update_and_delete_photo_raise_404_for_missing_id(db_session):
     missing_id = uuid4()
 
-    with pytest.raises(HTTPException) as update_exc:
+    with pytest.raises(NotFoundAppError) as update_exc:
         update_photo(
             db=db_session,
             photo_id=missing_id,
@@ -221,7 +221,7 @@ def test_update_and_delete_photo_raise_404_for_missing_id(db_session):
             ),
         )
 
-    with pytest.raises(HTTPException) as delete_exc:
+    with pytest.raises(NotFoundAppError) as delete_exc:
         delete_photo(db=db_session, photo_id=missing_id)
 
     assert update_exc.value.status_code == 404

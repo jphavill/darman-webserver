@@ -153,6 +153,14 @@ def test_update_and_delete_photo_by_id(client, monkeypatch):
     assert update_body["caption"] == "Updated caption"
     assert update_body["is_published"] is False
 
+    patch_response = client.patch(
+        f"/v1/photos/{photo_id}",
+        headers={"Authorization": "Bearer secret"},
+        json={"caption": "Patched caption"},
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["caption"] == "Patched caption"
+
     listed_after_update = client.get("/v1/photos")
     assert listed_after_update.status_code == 200
     assert listed_after_update.json()["total"] == 0

@@ -1,6 +1,7 @@
+import { DOCUMENT, NgStyle } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
-import { NgStyle } from '@angular/common';
 import { Photo } from '../../models/photo.model';
+import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
 
 @Component({
@@ -12,6 +13,8 @@ import { PhotoApiService } from '../../services/photo-api.service';
 })
 export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
   private readonly photoApi = inject(PhotoApiService);
+  private readonly window = inject(WINDOW);
+  private readonly document = inject(DOCUMENT);
   private readonly masonryRowHeight = 8;
   private readonly masonryGap = 16;
   private readonly fallbackAspectRatio = 4 / 3;
@@ -37,7 +40,7 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
     this.activePhoto = photo;
     const aspectRatio = this.getAspectRatioFromEvent(event) ?? this.thumbAspectRatios.get(photo.id) ?? this.fallbackAspectRatio;
     this.activePhotoImageStyle = this.buildModalImageStyle(aspectRatio);
-    document.body.classList.add('overlay-open');
+    this.document.body.classList.add('overlay-open');
   }
 
   closePhoto(): void {
@@ -47,7 +50,7 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
 
     this.activePhoto = null;
     this.activePhotoImageStyle = {};
-    document.body.classList.remove('overlay-open');
+    this.document.body.classList.remove('overlay-open');
   }
 
   openFullResolution(): void {
@@ -55,7 +58,7 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    window.open(this.activePhoto.full_url, '_blank', 'noopener,noreferrer');
+    this.window.open(this.activePhoto.fullUrl, '_blank', 'noopener,noreferrer');
   }
 
   trackByPhoto(index: number, photo: Photo): string {
@@ -104,7 +107,7 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
   }
 
   private recalculateMasonryLayout(): void {
-    const images = document.querySelectorAll<HTMLImageElement>('.photo-masonry .photo-tile img');
+    const images = this.document.querySelectorAll<HTMLImageElement>('.photo-masonry .photo-tile img');
 
     images.forEach((image) => {
       if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
@@ -132,9 +135,9 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
 
   private buildModalImageStyle(aspectRatio: number): Record<string, number> {
     const normalizedAspectRatio = aspectRatio > 0 ? aspectRatio : this.fallbackAspectRatio;
-    const isMobile = window.innerWidth <= 700;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const isMobile = this.window.innerWidth <= 700;
+    const viewportWidth = this.window.innerWidth;
+    const viewportHeight = this.window.innerHeight;
     const maxWidth = viewportWidth * (isMobile ? 0.94 : 0.96);
     const maxHeight = (viewportHeight * (isMobile ? 0.9 : 0.92)) - 72;
     const safeMaxHeight = Math.max(maxHeight, 1);
@@ -184,6 +187,6 @@ export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.classList.remove('overlay-open');
+    this.document.body.classList.remove('overlay-open');
   }
 }

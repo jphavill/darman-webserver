@@ -1,10 +1,24 @@
-export interface SprintRow {
+export interface SprintRowApi {
   id: number;
   name: string;
   sprint_time_ms: number;
   sprint_date: string;
   location: string;
   created_at: string;
+}
+
+export interface SprintRow {
+  id: number;
+  name: string;
+  sprintTimeMs: number;
+  sprintDate: string;
+  location: string;
+  createdAt: string;
+}
+
+export interface SprintListResponseApi {
+  rows: SprintRowApi[];
+  total: number;
 }
 
 export interface SprintListResponse {
@@ -23,4 +37,15 @@ export interface SprintQuery {
   date_to?: string;
   min_time_ms?: number;
   max_time_ms?: number;
+}
+
+export function mapSprintRowApiToSprintRow(row: SprintRowApi): SprintRow {
+  return {
+    id: row.id,
+    name: row.name,
+    sprintTimeMs: row.sprint_time_ms,
+    sprintDate: row.sprint_date,
+    location: row.location,
+    createdAt: row.created_at
+  };
 }

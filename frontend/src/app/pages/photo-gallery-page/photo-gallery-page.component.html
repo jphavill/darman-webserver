@@ -9,8 +9,8 @@
 
   <div class="photo-masonry">
     @for (photo of photos; track trackByPhoto($index, photo)) {
-      <button class="photo-tile" type="button" (click)="openPhoto(photo, $event)" [attr.aria-label]="'Open photo: ' + photo.alt_text">
-        <img [src]="photo.thumb_url" [alt]="photo.alt_text" loading="lazy" decoding="async" (load)="onThumbLoad($event, photo)" />
+      <button class="photo-tile" type="button" (click)="openPhoto(photo, $event)" [attr.aria-label]="'Open photo: ' + photo.altText">
+        <img [src]="photo.thumbUrl" [alt]="photo.altText" loading="lazy" decoding="async" (load)="onThumbLoad($event, photo)" />
       </button>
     }
   </div>
@@ -19,12 +19,12 @@
 @if (activePhoto) {
   <div class="photo-backdrop" (click)="closePhoto()"></div>
 
-  <article class="photo-modal" role="dialog" aria-modal="true" [attr.aria-label]="activePhoto.alt_text" (click)="$event.stopPropagation()">
+  <article class="photo-modal" role="dialog" aria-modal="true" [attr.aria-label]="activePhoto.altText" (click)="$event.stopPropagation()">
     <button class="close-btn" type="button" (click)="closePhoto()" aria-label="Close photo">
       <span aria-hidden="true">×</span>
     </button>
 
-    <img class="photo-modal-image" [src]="activePhoto.full_url" [alt]="activePhoto.alt_text" [ngStyle]="activePhotoImageStyle" decoding="async" (load)="onActivePhotoLoad($event)" />
+    <img class="photo-modal-image" [src]="activePhoto.fullUrl" [alt]="activePhoto.altText" [ngStyle]="activePhotoImageStyle" decoding="async" (load)="onActivePhotoLoad($event)" />
 
     <div class="photo-modal-footer">
       <p>{{ activePhoto.caption }}</p>

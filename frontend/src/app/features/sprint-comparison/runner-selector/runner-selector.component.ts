@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AvailableRunner } from './sprint-comparison.models';
+import { WINDOW } from '../../../core/browser/browser-globals';
+import { AvailableRunner } from '../sprint-comparison.models';
 
 @Component({
   selector: 'app-runner-selector',
@@ -11,6 +12,8 @@ import { AvailableRunner } from './sprint-comparison.models';
   styleUrl: './runner-selector.component.css'
 })
 export class RunnerSelectorComponent {
+  private readonly window = inject(WINDOW);
+
   @Input() runners: AvailableRunner[] = [];
   @Input() selectedPersonIds: number[] = [];
   @Input() searchTerm = '';
@@ -70,7 +73,7 @@ export class RunnerSelectorComponent {
   }
 
   closeDropdown(): void {
-    window.setTimeout(() => {
+    this.window.setTimeout(() => {
       this.dropdownOpen = false;
     }, 100);
   }

@@ -6,9 +6,9 @@ import {
   ComparisonMode,
   RunWindow,
   SelectedRunner
-} from './sprint-comparison.models';
-import { RunnerSelectorComponent } from './runner-selector.component';
-import { SelectedRunnerListComponent } from './selected-runner-list.component';
+} from '../sprint-comparison.models';
+import { RunnerSelectorComponent } from '../runner-selector/runner-selector.component';
+import { SelectedRunnerListComponent } from '../selected-runner-list/selected-runner-list.component';
 
 @Component({
   selector: 'app-sprint-comparison-controls',

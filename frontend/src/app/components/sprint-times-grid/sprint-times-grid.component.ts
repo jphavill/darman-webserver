@@ -15,6 +15,7 @@ import {
 } from 'ag-grid-community';
 import { SprintApiService } from '../../services/sprint-api.service';
 import { SprintQuery, SprintRow } from '../../models/sprint.model';
+import { formatDisplayDate, formatSprintMs } from '../../shared/format/sprint-format';
 
 @Component({
   selector: 'app-sprint-times-grid',
@@ -48,16 +49,16 @@ export class SprintTimesGridComponent {
       valueFormatter: (params) => this.formatName(params.value as string)
     },
     {
-      field: 'sprint_time_ms',
+      field: 'sprintTimeMs',
       headerName: 'Sprint Time',
       filter: 'agNumberColumnFilter',
-      valueFormatter: (params) => this.formatSprintMs(params.value as number)
+      valueFormatter: (params) => formatSprintMs(params.value as number)
     },
     {
-      field: 'sprint_date',
+      field: 'sprintDate',
       headerName: 'Date',
       filter: 'agDateColumnFilter',
-      valueFormatter: (params) => this.formatDate(params.value as string)
+      valueFormatter: (params) => formatDisplayDate(params.value as string)
     },
     { field: 'location', headerName: 'Location', filter: 'agTextColumnFilter' }
   ];
@@ -121,8 +122,14 @@ export class SprintTimesGridComponent {
 
     if (sortModel.length > 0) {
       const sort = sortModel[0];
-      if (sort.colId === 'name' || sort.colId === 'sprint_time_ms' || sort.colId === 'sprint_date' || sort.colId === 'location') {
+      if (sort.colId === 'name' || sort.colId === 'location') {
         query.sort_by = sort.colId;
+      }
+      if (sort.colId === 'sprintTimeMs') {
+        query.sort_by = 'sprint_time_ms';
+      }
+      if (sort.colId === 'sprintDate') {
+        query.sort_by = 'sprint_date';
       }
       query.sort_dir = sort.sort === 'asc' ? 'asc' : 'desc';
     }
@@ -137,7 +144,7 @@ export class SprintTimesGridComponent {
       query.location = locationFilter.filter;
     }
 
-    const timeFilter = filterModel['sprint_time_ms'] as NumberFilterModel | undefined;
+    const timeFilter = filterModel['sprintTimeMs'] as NumberFilterModel | undefined;
     if (timeFilter?.filter != null) {
       if (timeFilter.type === 'lessThan' || timeFilter.type === 'lessThanOrEqual') {
         query.max_time_ms = timeFilter.filter;
@@ -149,7 +156,7 @@ export class SprintTimesGridComponent {
       }
     }
 
-    const dateFilter = filterModel['sprint_date'] as DateFilterModel | undefined;
+    const dateFilter = filterModel['sprintDate'] as DateFilterModel | undefined;
     if (dateFilter?.dateFrom) {
       if (dateFilter.type === 'lessThan' || dateFilter.type === 'lessThanOrEqual') {
         query.date_to = dateFilter.dateFrom;
@@ -165,26 +172,6 @@ export class SprintTimesGridComponent {
     }
 
     return query;
-  }
-
-  private formatSprintMs(value: number): string {
-    if (!Number.isFinite(value)) {
-      return '-';
-    }
-    return `${(value / 1000).toFixed(3)} s`;
-  }
-
-  private formatDate(value: string): string {
-    if (!value) {
-      return '-';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return value;
-    }
-
-    return parsed.toLocaleDateString();
   }
 
   private formatName(value: string): string {

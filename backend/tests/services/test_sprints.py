@@ -1,10 +1,10 @@
 from datetime import date
 
-from fastapi import HTTPException
+from core.errors import ValidationAppError
 
-from models import Person
-from schemas import SprintCreateRequest
-from services.sprints import create_sprint_entry, list_best_times, list_sprints
+from models import Person, SprintEntry
+from schemas import SprintCreateRequest, SprintUpdateRequest
+from services.sprints import create_sprint_entry, list_best_times, list_sprints, update_sprint_entry
 
 
 def test_create_sprint_entry_with_existing_person_id(db_session):
@@ -81,7 +81,7 @@ def test_create_sprint_entry_rejects_invalid_person_id(db_session):
                 location="Track B",
             ),
         )
-    except HTTPException as exc:
+    except ValidationAppError as exc:
         assert exc.status_code == 422
         assert exc.detail == "person_id is invalid"
     else:
@@ -172,3 +172,70 @@ def test_existing_sprint_history_resolves_display_name(db_session):
 
     assert result.total == 2
     assert {row.name for row in result.rows} == {"Chris Doe"}
+
+
+def test_update_sprint_entry_reassigns_to_existing_person_name(db_session):
+    original = create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10100, sprint_date=date(2026, 3, 1), location="Track A"),
+    )
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Jamie", sprint_time_ms=9900, sprint_date=date(2026, 3, 2), location="Track B"),
+    )
+
+    updated = update_sprint_entry(db_session, original.id, SprintUpdateRequest(name="Jamie"))
+    jamie = db_session.query(Person).filter(Person.normalized_name == "jamie").one()
+    entry = db_session.query(SprintEntry).filter(SprintEntry.id == original.id).one()
+
+    assert updated.name == "Jamie"
+    assert entry.person_id == jamie.id
+
+
+def test_update_sprint_entry_rejects_unknown_name(db_session):
+    original = create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10100, sprint_date=date(2026, 3, 1), location="Track A"),
+    )
+
+    try:
+        update_sprint_entry(db_session, original.id, SprintUpdateRequest(name="Does Not Exist"))
+    except ValidationAppError as exc:
+        assert exc.status_code == 422
+        assert exc.detail == "person name does not exist"
+    else:
+        raise AssertionError("expected HTTPException")
+
+
+def test_update_sprint_entry_supports_person_id_for_active_person(db_session):
+    original = create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10100, sprint_date=date(2026, 3, 1), location="Track A"),
+    )
+    jamie = Person(name="Jamie", normalized_name="jamie", is_active=True)
+    db_session.add(jamie)
+    db_session.commit()
+
+    updated = update_sprint_entry(db_session, original.id, SprintUpdateRequest(person_id=jamie.id))
+    entry = db_session.query(SprintEntry).filter(SprintEntry.id == original.id).one()
+
+    assert updated.name == "Jamie"
+    assert entry.person_id == jamie.id
+
+
+def test_update_sprint_entry_rejects_inactive_person_id(db_session):
+    original = create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10100, sprint_date=date(2026, 3, 1), location="Track A"),
+    )
+    inactive = Person(name="Retired", normalized_name="retired", is_active=False)
+    db_session.add(inactive)
+    db_session.commit()
+
+    try:
+        update_sprint_entry(db_session, original.id, SprintUpdateRequest(person_id=inactive.id))
+    except ValidationAppError as exc:
+        assert exc.status_code == 422
+        assert exc.detail == "person_id is invalid"
+    else:
+        raise AssertionError("expected HTTPException")

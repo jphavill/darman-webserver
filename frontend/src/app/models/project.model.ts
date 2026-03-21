@@ -15,12 +15,6 @@ export interface ProjectLink {
   url: string;
 }
 
-export interface FeaturedMedia {
-  url: string;
-  alt: string;
-  caption: string;
-}
-
 export interface ProjectOpenRequest {
   project: Project;
   trigger: HTMLElement;

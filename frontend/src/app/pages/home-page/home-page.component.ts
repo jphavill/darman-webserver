@@ -1,5 +1,6 @@
-import { Component, HostListener } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DOCUMENT } from '@angular/common';
+import { Component, HostListener, OnDestroy, SecurityContext, inject } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { physicalProjects, softwareProjects } from '../../data/projects.data';
 import { Project, ProjectOpenRequest } from '../../models/project.model';
@@ -7,6 +8,7 @@ import { SiteFooterComponent } from '../../components/site-footer/site-footer.co
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { ProjectOverlayComponent } from '../../components/project-overlay/project-overlay.component';
 import { ProjectSectionComponent } from '../../components/project-section/project-section.component';
+import { WINDOW } from '../../core/browser/browser-globals';
 
 @Component({
   selector: 'app-home-page',
@@ -15,8 +17,10 @@ import { ProjectSectionComponent } from '../../components/project-section/projec
   templateUrl: './home-page.component.html',
   styleUrls: ['./home-page.component.css']
 })
-export class HomePageComponent {
-  constructor(private sanitizer: DomSanitizer) {}
+export class HomePageComponent implements OnDestroy {
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly window = inject(WINDOW);
+  private readonly document = inject(DOCUMENT);
 
   readonly softwareProjects = softwareProjects;
   readonly physicalProjects = physicalProjects;
@@ -24,7 +28,7 @@ export class HomePageComponent {
   overlayVisible = false;
   isExpanded = false;
   activeProject: Project | null = null;
-  activeProjectMarkdown: SafeHtml = '';
+  activeProjectMarkdown = '';
   expandedStyle: Record<string, string> = {};
 
   private originRect: DOMRect | null = null;
@@ -40,7 +44,7 @@ export class HomePageComponent {
     this.isExpanded = false;
     this.expandedStyle = this.rectToStyle(this.originRect, false);
 
-    document.body.classList.add('overlay-open');
+    this.document.body.classList.add('overlay-open');
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -58,11 +62,11 @@ export class HomePageComponent {
     this.isExpanded = false;
     this.expandedStyle = this.rectToStyle(this.originRect ?? this.getTargetRect(), true);
 
-    window.setTimeout(() => {
+    this.window.setTimeout(() => {
       this.overlayVisible = false;
       this.activeProject = null;
       this.activeProjectMarkdown = '';
-      document.body.classList.remove('overlay-open');
+      this.document.body.classList.remove('overlay-open');
 
       if (this.openTrigger) {
         this.openTrigger.focus();
@@ -80,13 +84,13 @@ export class HomePageComponent {
     }
   }
 
-  private markdownToHtml(markdown: string): SafeHtml {
+  private markdownToHtml(markdown: string): string {
     const html = marked.parse(markdown) as string;
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+    return this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
   }
 
   private rectToStyle(rect: DOMRect, withTransition: boolean): Record<string, string> {
-    const mobile = window.innerWidth <= 768;
+    const mobile = this.window.innerWidth <= 768;
 
     return {
       top: `${rect.top}px`,
@@ -101,8 +105,8 @@ export class HomePageComponent {
   }
 
   private getTargetRect(): DOMRect {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const vw = this.window.innerWidth;
+    const vh = this.window.innerHeight;
     const mobile = vw <= 768;
 
     if (mobile) {
@@ -113,5 +117,9 @@ export class HomePageComponent {
     const height = Math.min(740, vh - 48);
 
     return new DOMRect((vw - width) / 2, (vh - height) / 2, width, height);
+  }
+
+  ngOnDestroy(): void {
+    this.document.body.classList.remove('overlay-open');
   }
 }

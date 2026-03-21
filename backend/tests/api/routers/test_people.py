@@ -13,6 +13,14 @@ def _delete_person(client, token: str, person_id: int):
     )
 
 
+def _create_person(client, token: str, payload: dict):
+    return client.post(
+        "/v1/people",
+        headers={"Authorization": f"Bearer {token}"},
+        json=payload,
+    )
+
+
 def test_get_people_returns_active_people_alphabetically(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert_sprint(
@@ -66,6 +74,53 @@ def test_get_people_excludes_inactive_people(client, db_session):
     response = client.get("/v1/people")
     assert response.status_code == 200
     assert [row["name"] for row in response.json()] == ["Active User"]
+
+
+def test_post_people_requires_auth(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+
+    response = client.post("/v1/people", json={"name": "Alex"})
+    assert response.status_code == 401
+
+
+def test_post_people_creates_person(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+
+    created = _create_person(client, "secret", {"name": "Alex"})
+    assert created.status_code == 200
+    assert created.json()["name"] == "Alex"
+
+    response = client.get("/v1/people", params={"q": "alex"})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_post_people_is_idempotent_for_existing_name(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+
+    first = _create_person(client, "secret", {"name": "  JaSon   Doe "})
+    second = _create_person(client, "secret", {"name": "jason doe"})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["id"] == second.json()["id"]
+
+
+def test_post_people_reactivates_inactive_person(client, monkeypatch, db_session):
+    from models import Person
+
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    inactive = Person(name="Alex", normalized_name="alex", is_active=False)
+    db_session.add(inactive)
+    db_session.commit()
+
+    created = _create_person(client, "secret", {"name": "alex"})
+    assert created.status_code == 200
+    assert created.json()["id"] == inactive.id
+
+    response = client.get("/v1/people", params={"q": "alex"})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
 
 
 def test_delete_person_requires_auth(client, monkeypatch):

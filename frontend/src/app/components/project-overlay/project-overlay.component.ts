@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SafeHtml } from '@angular/platform-browser';
 import { Project } from '../../models/project.model';
 
 @Component({
@@ -15,7 +14,7 @@ export class ProjectOverlayComponent {
   @Input() overlayVisible = false;
   @Input() isExpanded = false;
   @Input() expandedStyle: Record<string, string> = {};
-  @Input() activeProjectMarkdown: SafeHtml = '';
+  @Input() activeProjectMarkdown = '';
 
   @Output() closeRequested = new EventEmitter<void>();
 
