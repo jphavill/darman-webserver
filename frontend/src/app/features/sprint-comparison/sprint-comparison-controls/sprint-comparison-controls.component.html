@@ -3,7 +3,9 @@
     <label class="control-field mode-field">
       <span>Mode</span>
       <select [ngModel]="mode" (ngModelChange)="modeChange.emit($event)">
-        <option *ngFor="let option of modeOptions" [ngValue]="option.value">{{ option.label }}</option>
+        @for (option of modeOptions; track option) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
       </select>
     </label>
 
@@ -11,16 +13,22 @@
       <span>Location</span>
       <select [ngModel]="location" (ngModelChange)="locationChange.emit($event)">
         <option [ngValue]="null">All</option>
-        <option *ngFor="let item of availableLocations" [ngValue]="item">{{ item }}</option>
+        @for (item of availableLocations; track item) {
+          <option [ngValue]="item">{{ item }}</option>
+        }
       </select>
     </label>
 
-    <label class="control-field runs-field" *ngIf="mode === 'progression'">
-      <span>Runs</span>
-      <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
-        <option *ngFor="let option of runWindowOptions" [ngValue]="option.value">{{ option.label }}</option>
-      </select>
-    </label>
+    @if (mode === 'progression') {
+      <label class="control-field runs-field">
+        <span>Runs</span>
+        <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
+          @for (option of runWindowOptions; track option) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    }
 
     <div class="control-field runner-field">
       <span>Runner</span>
@@ -44,7 +52,7 @@
       [class.is-active]="showBenchmarks"
       [attr.aria-pressed]="showBenchmarks"
       (click)="toggleBenchmarks()"
-    >
+      >
       Benchmarks
     </button>
 
@@ -52,14 +60,14 @@
       <app-sprint-unit-toggle></app-sprint-unit-toggle>
     </div>
 
-    <ng-container *ngFor="let runner of selectedRunners">
+    @for (runner of selectedRunners; track runner) {
       <div class="selected-runner-pill">
         <label class="visibility-toggle">
           <input
             type="checkbox"
             [checked]="runner.visible"
             (change)="onRunnerVisibilityChange(runner.personId, $event)"
-          />
+            />
         </label>
         <input
           class="color-input"
@@ -67,18 +75,18 @@
           [value]="runner.color"
           [attr.aria-label]="'Choose color for ' + runner.personName"
           (change)="onRunnerColorChange(runner.personId, $event)"
-        />
+          />
         <span>{{ runner.personName }}</span>
         <button
           type="button"
           class="remove-button"
           [attr.aria-label]="'Remove ' + runner.personName"
           (click)="removeRunner.emit(runner.personId)"
-        >
+          >
           X
         </button>
       </div>
-    </ng-container>
+    }
   </div>
 
 </aside>

@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { Component, HostListener, OnDestroy, SecurityContext, inject } from '@angular/core';
+
+import { Component, HostListener, OnDestroy, SecurityContext, inject, DOCUMENT } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { physicalProjects, softwareProjects } from '../../data/projects.data';
@@ -11,11 +11,10 @@ import { ProjectSectionComponent } from '../../components/project-section/projec
 import { WINDOW } from '../../core/browser/browser-globals';
 
 @Component({
-  selector: 'app-home-page',
-  standalone: true,
-  imports: [SiteHeaderComponent, ProjectSectionComponent, SiteFooterComponent, ProjectOverlayComponent],
-  templateUrl: './home-page.component.html',
-  styleUrls: ['./home-page.component.css']
+    selector: 'app-home-page',
+    imports: [SiteHeaderComponent, ProjectSectionComponent, SiteFooterComponent, ProjectOverlayComponent],
+    templateUrl: './home-page.component.html',
+    styleUrls: ['./home-page.component.css']
 })
 export class HomePageComponent implements OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);

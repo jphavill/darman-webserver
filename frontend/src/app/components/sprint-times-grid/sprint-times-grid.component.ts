@@ -42,11 +42,10 @@ interface AdvancedGridState {
 const ADVANCED_GRID_STATE_STORAGE_KEY = 'sprint-grid-advanced-state';
 
 @Component({
-  selector: 'app-sprint-times-grid',
-  standalone: true,
-  imports: [AgGridAngular, NgIconComponent, SprintUnitToggleComponent],
-  templateUrl: './sprint-times-grid.component.html',
-  styleUrl: './sprint-times-grid.component.css'
+    selector: 'app-sprint-times-grid',
+    imports: [AgGridAngular, NgIconComponent, SprintUnitToggleComponent],
+    templateUrl: './sprint-times-grid.component.html',
+    styleUrl: './sprint-times-grid.component.css'
 })
 export class SprintTimesGridComponent {
   private readonly sprintApi = inject(SprintApiService);

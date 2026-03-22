@@ -4,11 +4,10 @@ import { NgIconComponent } from '@ng-icons/core';
 import { Project } from '../../models/project.model';
 
 @Component({
-  selector: 'app-project-overlay',
-  standalone: true,
-  imports: [CommonModule, NgIconComponent],
-  templateUrl: './project-overlay.component.html',
-  styleUrls: ['./project-overlay.component.css']
+    selector: 'app-project-overlay',
+    imports: [CommonModule, NgIconComponent],
+    templateUrl: './project-overlay.component.html',
+    styleUrls: ['./project-overlay.component.css']
 })
 export class ProjectOverlayComponent {
   @Input() activeProject: Project | null = null;

@@ -3,11 +3,10 @@ import { Project, ProjectOpenRequest } from '../../models/project.model';
 import { ProjectPillComponent } from '../project-pill/project-pill.component';
 
 @Component({
-  selector: 'app-project-section',
-  standalone: true,
-  imports: [ProjectPillComponent],
-  templateUrl: './project-section.component.html',
-  styleUrls: ['./project-section.component.css']
+    selector: 'app-project-section',
+    imports: [ProjectPillComponent],
+    templateUrl: './project-section.component.html',
+    styleUrls: ['./project-section.component.css']
 })
 export class ProjectSectionComponent {
   @Input({ required: true }) title!: string;

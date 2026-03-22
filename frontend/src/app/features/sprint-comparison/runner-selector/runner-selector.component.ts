@@ -1,15 +1,14 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WINDOW } from '../../../core/browser/browser-globals';
 import { AvailableRunner } from '../sprint-comparison.models';
 
 @Component({
-  selector: 'app-runner-selector',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './runner-selector.component.html',
-  styleUrl: './runner-selector.component.css'
+    selector: 'app-runner-selector',
+    imports: [FormsModule],
+    templateUrl: './runner-selector.component.html',
+    styleUrl: './runner-selector.component.css'
 })
 export class RunnerSelectorComponent {
   private readonly window = inject(WINDOW);

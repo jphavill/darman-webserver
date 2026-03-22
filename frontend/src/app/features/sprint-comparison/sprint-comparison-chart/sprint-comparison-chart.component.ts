@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import {
   AfterViewInit,
   Component,
@@ -45,11 +45,10 @@ interface BenchmarkLabelConfig {
 }
 
 @Component({
-  selector: 'app-sprint-comparison-chart',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './sprint-comparison-chart.component.html',
-  styleUrl: './sprint-comparison-chart.component.css'
+    selector: 'app-sprint-comparison-chart',
+    imports: [],
+    templateUrl: './sprint-comparison-chart.component.html',
+    styleUrl: './sprint-comparison-chart.component.css'
 })
 export class SprintComparisonChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() mode: ComparisonMode = 'progression';

@@ -10,17 +10,20 @@
         (ngModelChange)="onSearchTermChange($event)"
         placeholder="Runner"
         aria-label="Search runners"
-      />
+        />
 
-      <ul class="runner-dropdown" *ngIf="dropdownOpen && filteredRunners.length > 0">
-        <li
-          *ngFor="let runner of filteredRunners"
-          [class.is-disabled]="!canAdd(runner)"
-          (mousedown)="selectFromDropdown(runner)"
-        >
-          {{ runner.name }}
-        </li>
-      </ul>
+      @if (dropdownOpen && filteredRunners.length > 0) {
+        <ul class="runner-dropdown">
+          @for (runner of filteredRunners; track runner) {
+            <li
+              [class.is-disabled]="!canAdd(runner)"
+              (mousedown)="selectFromDropdown(runner)"
+              >
+              {{ runner.name }}
+            </li>
+          }
+        </ul>
+      }
     </div>
   </div>
 </section>

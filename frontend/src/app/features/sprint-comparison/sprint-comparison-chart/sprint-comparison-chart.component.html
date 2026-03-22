@@ -1,10 +1,18 @@
 <section class="chart-card">
-  <div class="state" *ngIf="loading">Loading sprint comparison data...</div>
-  <div class="state" *ngIf="!loading && error">{{ error }}</div>
-  <div class="state" *ngIf="!loading && !error && !hasSelectedRunners">Select at least 1 runner to compare.</div>
-  <div class="state" *ngIf="!loading && !error && hasSelectedRunners && !hasData">
-    No sprint data matches the selected runners and location.
-  </div>
+  @if (loading) {
+    <div class="state">Loading sprint comparison data...</div>
+  }
+  @if (!loading && error) {
+    <div class="state">{{ error }}</div>
+  }
+  @if (!loading && !error && !hasSelectedRunners) {
+    <div class="state">Select at least 1 runner to compare.</div>
+  }
+  @if (!loading && !error && hasSelectedRunners && !hasData) {
+    <div class="state">
+      No sprint data matches the selected runners and location.
+    </div>
+  }
 
   <div
     #chartContainer
@@ -12,10 +20,14 @@
     [class.is-hidden]="loading || !!error || !hasSelectedRunners || !hasData"
   ></div>
 
-  <div class="legend" *ngIf="!loading && !error && hasSelectedRunners && hasData">
-    <div class="legend-item" *ngFor="let runner of legendRunners">
-      <span class="legend-swatch" [style.background]="runner.color"></span>
-      <span>{{ runner.personName }}</span>
+  @if (!loading && !error && hasSelectedRunners && hasData) {
+    <div class="legend">
+      @for (runner of legendRunners; track runner) {
+        <div class="legend-item">
+          <span class="legend-swatch" [style.background]="runner.color"></span>
+          <span>{{ runner.personName }}</span>
+        </div>
+      }
     </div>
-  </div>
+  }
 </section>

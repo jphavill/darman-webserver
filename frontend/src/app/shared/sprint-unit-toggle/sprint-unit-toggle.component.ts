@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, inject } from '@angular/core';
 import { SprintDisplayUnit } from '../format/sprint-format';
 import { SprintDisplayUnitService } from '../preferences/sprint-display-unit.service';
@@ -10,11 +10,10 @@ interface SprintUnitOption {
 }
 
 @Component({
-  selector: 'app-sprint-unit-toggle',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './sprint-unit-toggle.component.html',
-  styleUrl: './sprint-unit-toggle.component.css'
+    selector: 'app-sprint-unit-toggle',
+    imports: [],
+    templateUrl: './sprint-unit-toggle.component.html',
+    styleUrl: './sprint-unit-toggle.component.css'
 })
 export class SprintUnitToggleComponent {
   private readonly sprintDisplayUnit = inject(SprintDisplayUnitService);

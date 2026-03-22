@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject } from '@angular/core';
 import {
   AvailableRunner,
@@ -12,12 +12,11 @@ import { SprintComparisonStore } from '../sprint-comparison.store';
 import { SprintDisplayUnitService } from '../../../shared/preferences/sprint-display-unit.service';
 
 @Component({
-  selector: 'app-sprint-comparison-page',
-  standalone: true,
-  imports: [CommonModule, SprintComparisonControlsComponent, SprintComparisonChartComponent],
-  providers: [SprintComparisonStore],
-  templateUrl: './sprint-comparison-page.component.html',
-  styleUrl: './sprint-comparison-page.component.css'
+    selector: 'app-sprint-comparison-page',
+    imports: [SprintComparisonControlsComponent, SprintComparisonChartComponent],
+    providers: [SprintComparisonStore],
+    templateUrl: './sprint-comparison-page.component.html',
+    styleUrl: './sprint-comparison-page.component.css'
 })
 export class SprintComparisonPageComponent implements OnInit {
   private readonly store = inject(SprintComparisonStore);

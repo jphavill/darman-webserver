@@ -1,16 +1,15 @@
-import { DOCUMENT, NgStyle } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { NgStyle } from '@angular/common';
+import { Component, HostListener, OnDestroy, OnInit, inject, DOCUMENT } from '@angular/core';
 import { NgIconComponent } from '@ng-icons/core';
 import { Photo } from '../../models/photo.model';
 import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
 
 @Component({
-  selector: 'app-photo-gallery-page',
-  standalone: true,
-  imports: [NgStyle, NgIconComponent],
-  templateUrl: './photo-gallery-page.component.html',
-  styleUrls: ['./photo-gallery-page.component.css']
+    selector: 'app-photo-gallery-page',
+    imports: [NgStyle, NgIconComponent],
+    templateUrl: './photo-gallery-page.component.html',
+    styleUrls: ['./photo-gallery-page.component.css']
 })
 export class PhotoGalleryPageComponent implements OnInit, OnDestroy {
   private readonly photoApi = inject(PhotoApiService);

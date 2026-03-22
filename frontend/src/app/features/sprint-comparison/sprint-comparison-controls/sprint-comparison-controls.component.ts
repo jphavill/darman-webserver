@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIconComponent } from '@ng-icons/core';
@@ -12,11 +12,10 @@ import { RunnerSelectorComponent } from '../runner-selector/runner-selector.comp
 import { SprintUnitToggleComponent } from '../../../shared/sprint-unit-toggle/sprint-unit-toggle.component';
 
 @Component({
-  selector: 'app-sprint-comparison-controls',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RunnerSelectorComponent, NgIconComponent, SprintUnitToggleComponent],
-  templateUrl: './sprint-comparison-controls.component.html',
-  styleUrl: './sprint-comparison-controls.component.css'
+    selector: 'app-sprint-comparison-controls',
+    imports: [FormsModule, RunnerSelectorComponent, NgIconComponent, SprintUnitToggleComponent],
+    templateUrl: './sprint-comparison-controls.component.html',
+    styleUrl: './sprint-comparison-controls.component.css'
 })
 export class SprintComparisonControlsComponent {
   @Input() mode: ComparisonMode = 'progression';
