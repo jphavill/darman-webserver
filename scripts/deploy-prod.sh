@@ -14,7 +14,7 @@ usage() {
   printf '  3) backend tests (backend service container)\n'
   printf '  4) postgres backup to %s\n' "$BACKUP_DIR"
   printf '  5) remove backups older than 14 days\n'
-  printf '  6) make prod\n'
+  printf '  6) docker compose down/build/up\n'
 }
 
 log() {
@@ -76,12 +76,12 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [ ! -f "$REPO_ROOT/Makefile" ]; then
-  printf 'Could not find Makefile at repo root: %s\n' "$REPO_ROOT"
+if [ ! -f "$REPO_ROOT/docker-compose.yml" ]; then
+  printf 'Could not find docker-compose.yml at repo root: %s\n' "$REPO_ROOT"
   exit 1
 fi
 
-for cmd in git docker make find; do
+for cmd in git docker find; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     printf 'Missing required command: %s\n' "$cmd"
     exit 1
@@ -121,7 +121,9 @@ log "Pruning backups older than 14 days"
 run_cmd find "$BACKUP_DIR" -maxdepth 1 -type f -name 'data_backup_*.dump' -mtime +14 -delete
 
 log "Deploying production stack"
-run_in_dir "$REPO_ROOT" make prod
+run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml down
+run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml build --pull
+run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d --remove-orphans
 
 log "Deploy complete"
 printf 'Backup created: %s\n' "$FINAL_BACKUP_PATH"

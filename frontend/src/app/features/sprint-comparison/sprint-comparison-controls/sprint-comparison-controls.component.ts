@@ -41,15 +41,25 @@ export class SprintComparisonControlsComponent {
 
   readonly modeOptions: Array<{ value: ComparisonMode; label: string }> = [
     { value: 'progression', label: 'Per Run' },
-    { value: 'daily_best', label: 'Daily Best' }
+    { value: 'daily_best', label: 'Time' }
   ];
 
-  readonly runWindowOptions: Array<{ value: RunWindow; label: string }> = [
+  readonly progressionRunWindowOptions: Array<{ value: RunWindow; label: string }> = [
     { value: 'all', label: 'All' },
     { value: '10', label: 'Last 10' },
     { value: '20', label: 'Last 20' },
     { value: '50', label: 'Last 50' }
   ];
+
+  readonly timeRunWindowOptions: Array<{ value: RunWindow; label: string }> = [
+    { value: 'month', label: 'Month' },
+    { value: 'year', label: 'Year' },
+    { value: 'all', label: 'All Time' }
+  ];
+
+  get runWindowOptions(): Array<{ value: RunWindow; label: string }> {
+    return this.mode === 'progression' ? this.progressionRunWindowOptions : this.timeRunWindowOptions;
+  }
 
   get selectedPersonIds(): number[] {
     return this.selectedRunners.map((runner) => runner.personId);

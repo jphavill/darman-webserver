@@ -14,6 +14,7 @@ import {
   Benchmark,
   ComparisonMode,
   ComparisonSeries,
+  RunWindow,
   SelectedRunner
 } from '../sprint-comparison.models';
 import { BENCHMARKS } from '../benchmarks.constants';
@@ -52,6 +53,7 @@ interface BenchmarkLabelConfig {
 })
 export class SprintComparisonChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() mode: ComparisonMode = 'progression';
+  @Input() runWindow: RunWindow = 'all';
   @Input() series: ComparisonSeries[] = [];
   @Input() selectedRunners: SelectedRunner[] = [];
   @Input() showBenchmarks = false;
@@ -79,7 +81,11 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
   }
 
   get xAxisLabel(): string {
-    return this.mode === 'progression' ? 'Attempt Number (latest-aligned)' : 'Date';
+    if (this.mode === 'progression') {
+      return 'Attempt Number (latest-aligned)';
+    }
+
+    return this.runWindow === 'month' ? 'Date' : 'Month';
   }
 
   ngAfterViewInit(): void {
@@ -129,7 +135,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
     const benchmarkLabelConfigs = this.getBenchmarkLabelConfigs();
     const maxPoints = Math.max(...this.visibleSeries.map((item) => item.points.length));
     const categories = Array.from({ length: maxPoints }, (_, index) => `${index + 1}`);
-    const yAxisBounds = this.getYAxisBounds();
+    const yAxisBounds = this.getYAxisBounds(this.visibleSeries);
 
     const runnerSeries = this.visibleSeries.map((item) => {
       const color = this.getRunnerColor(item.personId);
@@ -186,15 +192,16 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
   }
 
   private buildDailyBestOption(): EChartsOption {
+    const filteredSeries = this.getTimeModeSeries();
     const benchmarkLabelConfigs = this.getBenchmarkLabelConfigs();
     const dateSet = new Set<string>();
-    this.visibleSeries.forEach((item) => {
+    filteredSeries.forEach((item) => {
       item.points.forEach((point) => dateSet.add(String(point.x)));
     });
     const dates = Array.from(dateSet).sort();
-    const yAxisBounds = this.getYAxisBounds();
+    const yAxisBounds = this.getYAxisBounds(filteredSeries);
 
-    const runnerSeries = this.visibleSeries.map((item) => {
+    const runnerSeries = filteredSeries.map((item) => {
       const color = this.getRunnerColor(item.personId);
       const pointByDate = new Map(item.points.map((point) => [String(point.x), this.toDisplayValue(point.y)]));
       return {
@@ -229,6 +236,81 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
       yAxis: this.buildYAxis(yAxisBounds),
       series: benchmarkSeries ? [...runnerSeries, benchmarkSeries] : runnerSeries
     };
+  }
+
+  private getTimeModeSeries(): ComparisonSeries[] {
+    const latestDate = this.getLatestSeriesDate();
+    if (!latestDate) {
+      return this.visibleSeries;
+    }
+
+    if (this.runWindow === 'month') {
+      const cutoffDate = new Date(Date.UTC(latestDate.getUTCFullYear(), latestDate.getUTCMonth(), latestDate.getUTCDate()));
+      cutoffDate.setUTCMonth(cutoffDate.getUTCMonth() - 1);
+      return this.visibleSeries.map((series) => {
+        const points = this.toDatePointRecords(series.points)
+          .filter((point) => point.date >= cutoffDate)
+          .map((point) => ({ x: point.day, y: point.y }));
+        return { ...series, points };
+      });
+    }
+
+    const latestYear = latestDate.getUTCFullYear();
+    return this.visibleSeries.map((series) => {
+      const records = this.toDatePointRecords(series.points)
+        .filter((point) => this.runWindow === 'all' || point.date.getUTCFullYear() === latestYear);
+      const bestByMonth = new Map<string, number>();
+
+      records.forEach((record) => {
+        const existing = bestByMonth.get(record.month);
+        bestByMonth.set(record.month, existing === undefined ? record.y : Math.min(existing, record.y));
+      });
+
+      const points = Array.from(bestByMonth.entries())
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([month, best]) => ({ x: month, y: best }));
+
+      return { ...series, points };
+    });
+  }
+
+  private getLatestSeriesDate(): Date | null {
+    let latest: Date | null = null;
+
+    this.visibleSeries.forEach((series) => {
+      this.toDatePointRecords(series.points).forEach((record) => {
+        if (!latest || record.date > latest) {
+          latest = record.date;
+        }
+      });
+    });
+
+    return latest;
+  }
+
+  private toDatePointRecords(points: ComparisonSeries['points']): Array<{ date: Date; day: string; month: string; y: number }> {
+    return points
+      .map((point) => {
+        const rawDate = String(point.x);
+        const date = this.parseDateString(rawDate);
+        if (!date) {
+          return null;
+        }
+
+        return {
+          date,
+          day: rawDate,
+          month: rawDate.slice(0, 7),
+          y: point.y
+        };
+      })
+      .filter((record): record is { date: Date; day: string; month: string; y: number } => record !== null)
+      .sort((left, right) => left.date.getTime() - right.date.getTime());
+  }
+
+  private parseDateString(value: string): Date | null {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private getChartGrid(benchmarkLabelConfigs: BenchmarkLabelConfig[]): object {
@@ -267,8 +349,8 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
     };
   }
 
-  private getYAxisBounds(): YAxisBounds {
-    const runnerValues = this.visibleSeries.flatMap((item) => item.points.map((point) => this.toDisplayValue(point.y)));
+  private getYAxisBounds(series: ComparisonSeries[]): YAxisBounds {
+    const runnerValues = series.flatMap((item) => item.points.map((point) => this.toDisplayValue(point.y)));
     const benchmarkValues = this.activeBenchmarks.map((benchmark) => this.toDisplayValue(benchmark.equivalent100mMs));
     const values = [...runnerValues, ...benchmarkValues];
     const targetTickCount = 6;

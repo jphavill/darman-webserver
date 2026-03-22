@@ -19,16 +19,14 @@
       </select>
     </label>
 
-    @if (mode === 'progression') {
-      <label class="control-field runs-field">
-        <span>Runs</span>
-        <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
-          @for (option of runWindowOptions; track option) {
-            <option [ngValue]="option.value">{{ option.label }}</option>
-          }
-        </select>
-      </label>
-    }
+    <label class="control-field runs-field">
+      <span>Runs</span>
+      <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
+        @for (option of runWindowOptions; track option) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
 
     <div class="control-field runner-field">
       <span>Runner</span>

@@ -37,6 +37,9 @@ export class SprintComparisonStore {
     error: null
   });
 
+  private readonly progressionRunWindows = ['all', '10', '20', '50'] as const;
+  private readonly timeRunWindows = ['month', 'year', 'all'] as const;
+
   loadLookups(): void {
     this.patchState({ loading: true, error: null });
 
@@ -68,7 +71,8 @@ export class SprintComparisonStore {
   }
 
   onModeChange(mode: ComparisonMode): void {
-    this.patchState({ mode });
+    const nextRunWindow = this.getCompatibleRunWindow(mode, this.state().runWindow);
+    this.patchState({ mode, runWindow: nextRunWindow });
     this.persistPreferences();
     this.fetchComparison();
   }
@@ -80,7 +84,8 @@ export class SprintComparisonStore {
   }
 
   onRunWindowChange(runWindow: RunWindow): void {
-    this.patchState({ runWindow });
+    const nextRunWindow = this.getCompatibleRunWindow(this.state().mode, runWindow);
+    this.patchState({ runWindow: nextRunWindow });
     this.persistPreferences();
     this.fetchComparison();
   }
@@ -177,7 +182,7 @@ export class SprintComparisonStore {
         mode: state.mode,
         personIds: state.selectedRunners.map((runner) => runner.personId),
         location: state.location,
-        runWindow: state.mode === 'progression' ? state.runWindow : 'all'
+        runWindow: state.mode === 'progression' ? this.getProgressionRunWindow(state.runWindow) : 'all'
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -232,9 +237,10 @@ export class SprintComparisonStore {
         return restored;
       }, []);
 
+    const mode = preferences.mode;
     this.patchState({
-      mode: preferences.mode,
-      runWindow: preferences.runWindow,
+      mode,
+      runWindow: this.getCompatibleRunWindow(mode, preferences.runWindow),
       location: preferences.location,
       showBenchmarks: preferences.showBenchmarks,
       selectedRunners
@@ -266,5 +272,25 @@ export class SprintComparisonStore {
 
   private asRunnerColorSource(value: RunnerColorSource | undefined): RunnerColorSource | undefined {
     return value === 'palette' || value === 'custom' ? value : undefined;
+  }
+
+  private getCompatibleRunWindow(mode: ComparisonMode, runWindow: RunWindow): RunWindow {
+    if (mode === 'progression') {
+      return this.isProgressionRunWindow(runWindow) ? runWindow : 'all';
+    }
+
+    return this.isTimeRunWindow(runWindow) ? runWindow : 'month';
+  }
+
+  private getProgressionRunWindow(runWindow: RunWindow): Extract<RunWindow, 'all' | '10' | '20' | '50'> {
+    return this.isProgressionRunWindow(runWindow) ? runWindow : 'all';
+  }
+
+  private isProgressionRunWindow(runWindow: RunWindow): runWindow is Extract<RunWindow, 'all' | '10' | '20' | '50'> {
+    return this.progressionRunWindows.includes(runWindow as (typeof this.progressionRunWindows)[number]);
+  }
+
+  private isTimeRunWindow(runWindow: RunWindow): runWindow is Extract<RunWindow, 'all' | 'month' | 'year'> {
+    return this.timeRunWindows.includes(runWindow as (typeof this.timeRunWindows)[number]);
   }
 }

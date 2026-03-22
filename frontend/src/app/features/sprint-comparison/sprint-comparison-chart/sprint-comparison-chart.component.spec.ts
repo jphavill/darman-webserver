@@ -14,6 +14,38 @@ describe('SprintComparisonChartComponent', () => {
     expect(component.xAxisLabel).toBe('Attempt Number (latest-aligned)');
   });
 
+  it('uses month axis label in time year mode', () => {
+    const component = new SprintComparisonChartComponent();
+    component.mode = 'daily_best';
+    component.runWindow = 'year';
+
+    expect(component.xAxisLabel).toBe('Month');
+  });
+
+  it('aggregates time year mode to monthly bests', () => {
+    const component = new SprintComparisonChartComponent();
+    component.mode = 'daily_best';
+    component.runWindow = 'year';
+    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }];
+    component.series = [
+      {
+        personId: 1,
+        personName: 'Alice',
+        points: [
+          { x: '2026-01-01', y: 10000 },
+          { x: '2026-01-20', y: 9800 },
+          { x: '2026-02-02', y: 9700 }
+        ]
+      }
+    ];
+
+    const option = (component as any).buildDailyBestOption();
+    const [runnerSeries] = option.series as Array<{ data: Array<number | null> }>;
+
+    expect((option.xAxis as { data: string[] }).data).toEqual(['2026-01', '2026-02']);
+    expect(runnerSeries.data).toEqual([9.8, 9.7]);
+  });
+
   it('shows data presence based on visible series only', () => {
     const component = new SprintComparisonChartComponent();
     component.selectedRunners = [

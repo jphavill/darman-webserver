@@ -33,4 +33,29 @@ describe('SprintComparisonControlsComponent', () => {
 
     expect(emitSpy).toHaveBeenCalledWith(true);
   });
+
+  it('shows Time as the daily best mode label', () => {
+    const component = new SprintComparisonControlsComponent();
+
+    expect(component.modeOptions).toContainEqual({ value: 'daily_best', label: 'Time' });
+  });
+
+  it('switches run window options by mode', () => {
+    const component = new SprintComparisonControlsComponent();
+
+    component.mode = 'progression';
+    expect(component.runWindowOptions).toEqual([
+      { value: 'all', label: 'All' },
+      { value: '10', label: 'Last 10' },
+      { value: '20', label: 'Last 20' },
+      { value: '50', label: 'Last 50' }
+    ]);
+
+    component.mode = 'daily_best';
+    expect(component.runWindowOptions).toEqual([
+      { value: 'month', label: 'Month' },
+      { value: 'year', label: 'Year' },
+      { value: 'all', label: 'All Time' }
+    ]);
+  });
 });

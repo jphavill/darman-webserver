@@ -1,5 +1,5 @@
 export type ComparisonMode = 'progression' | 'daily_best';
-export type RunWindow = 'all' | '10' | '20' | '50';
+export type RunWindow = 'all' | '10' | '20' | '50' | 'month' | 'year';
 
 export interface AvailableRunner {
   id: number;
