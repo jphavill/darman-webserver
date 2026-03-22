@@ -9,13 +9,12 @@ import {
   SelectedRunner
 } from '../sprint-comparison.models';
 import { RunnerSelectorComponent } from '../runner-selector/runner-selector.component';
-import { SelectedRunnerListComponent } from '../selected-runner-list/selected-runner-list.component';
 import { SprintUnitToggleComponent } from '../../../shared/sprint-unit-toggle/sprint-unit-toggle.component';
 
 @Component({
   selector: 'app-sprint-comparison-controls',
   standalone: true,
-  imports: [CommonModule, FormsModule, RunnerSelectorComponent, SelectedRunnerListComponent, NgIconComponent, SprintUnitToggleComponent],
+  imports: [CommonModule, FormsModule, RunnerSelectorComponent, NgIconComponent, SprintUnitToggleComponent],
   templateUrl: './sprint-comparison-controls.component.html',
   styleUrl: './sprint-comparison-controls.component.css'
 })
@@ -59,5 +58,19 @@ export class SprintComparisonControlsComponent {
 
   toggleBenchmarks(): void {
     this.showBenchmarksChange.emit(!this.showBenchmarks);
+  }
+
+  onRunnerVisibilityChange(personId: number, event: Event): void {
+    const visible = (event.target as HTMLInputElement | null)?.checked ?? false;
+    this.runnerVisibilityChange.emit({ personId, visible });
+  }
+
+  onRunnerColorChange(personId: number, event: Event): void {
+    const color = (event.target as HTMLInputElement | null)?.value;
+    if (!color) {
+      return;
+    }
+
+    this.runnerColorChange.emit({ personId, color });
   }
 }

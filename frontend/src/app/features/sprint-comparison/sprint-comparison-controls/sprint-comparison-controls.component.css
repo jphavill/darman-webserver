@@ -90,10 +90,16 @@
 }
 
 .utility-row {
-  display: grid;
-  grid-template-columns: auto auto auto minmax(0, 1fr);
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 0.45rem;
+}
+
+.reset-icon-button,
+.benchmarks-chip,
+.units-chip {
+  flex: 0 0 auto;
 }
 
 .units-chip {
@@ -102,10 +108,44 @@
   gap: 0;
 }
 
-.utility-row app-selected-runner-list {
-  min-width: 0;
-  border-left: 3px solid var(--border);
-  padding-left: 0.5rem;
+.selected-runner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  border-radius: 999px;
+  padding: 0.26rem 0.4rem;
+  flex: 0 0 auto;
+}
+
+.visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.color-input {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.remove-button {
+  min-width: 1.4rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  padding: 0.12rem 0.38rem;
+  font-size: 0.72rem;
+  cursor: pointer;
 }
 
 @media (max-width: 760px) {
@@ -153,9 +193,13 @@
   }
 
   .utility-row {
-    grid-template-columns: auto auto auto minmax(0, 1fr);
-    align-items: center;
+    align-items: flex-start;
     gap: 0.35rem;
+  }
+
+  .selected-runner-pill {
+    font-size: 0.78rem;
+    max-width: 100%;
   }
 
 }

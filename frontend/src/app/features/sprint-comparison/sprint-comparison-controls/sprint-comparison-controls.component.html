@@ -52,12 +52,33 @@
       <app-sprint-unit-toggle></app-sprint-unit-toggle>
     </div>
 
-    <app-selected-runner-list
-      [runners]="selectedRunners"
-      (removeRunner)="removeRunner.emit($event)"
-      (colorChange)="runnerColorChange.emit($event)"
-      (visibilityChange)="runnerVisibilityChange.emit($event)"
-    ></app-selected-runner-list>
+    <ng-container *ngFor="let runner of selectedRunners">
+      <div class="selected-runner-pill">
+        <label class="visibility-toggle">
+          <input
+            type="checkbox"
+            [checked]="runner.visible"
+            (change)="onRunnerVisibilityChange(runner.personId, $event)"
+          />
+        </label>
+        <input
+          class="color-input"
+          type="color"
+          [value]="runner.color"
+          [attr.aria-label]="'Choose color for ' + runner.personName"
+          (change)="onRunnerColorChange(runner.personId, $event)"
+        />
+        <span>{{ runner.personName }}</span>
+        <button
+          type="button"
+          class="remove-button"
+          [attr.aria-label]="'Remove ' + runner.personName"
+          (click)="removeRunner.emit(runner.personId)"
+        >
+          X
+        </button>
+      </div>
+    </ng-container>
   </div>
 
 </aside>
