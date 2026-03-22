@@ -248,7 +248,7 @@ docker exec -it postgres sh -lc 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB
 docker compose stop postgres
 docker compose rm -f postgres
 docker volume ls
-docker volume rm yourproject_postgres_data
+docker volume rm darman-webserver_postgres_data
 docker compose up -d postgres
 ```
 ## Makefile Shortcuts

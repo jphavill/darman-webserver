@@ -4,8 +4,10 @@ import subprocess
 import time
 from collections.abc import Generator
 
+import psycopg2
 import pytest
 from fastapi.testclient import TestClient
+from psycopg2 import sql
 from sqlalchemy import text
 
 from core.settings import get_settings
@@ -15,6 +17,9 @@ POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
 BASE_POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
 TEST_POSTGRES_DB = os.getenv("TEST_POSTGRES_DB", f"{BASE_POSTGRES_DB}_test")
+TEST_POSTGRES_HOST = os.getenv("TEST_POSTGRES_HOST", os.getenv("POSTGRES_HOST", "localhost"))
+TEST_POSTGRES_PORT = int(os.getenv("TEST_POSTGRES_PORT", os.getenv("POSTGRES_PORT", "5432")))
+TEST_BOOTSTRAP_POSTGRES = os.getenv("TEST_BOOTSTRAP_POSTGRES", "1") == "1"
 
 if not re.fullmatch(r"[A-Za-z0-9_]+", TEST_POSTGRES_DB):
     raise RuntimeError(
@@ -25,7 +30,9 @@ if not TEST_POSTGRES_DB.endswith("_test"):
         f"Unsafe TEST_POSTGRES_DB '{TEST_POSTGRES_DB}'. Test database names must end with '_test'."
     )
 
-TEST_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{TEST_POSTGRES_DB}"
+TEST_DATABASE_URL = (
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{TEST_POSTGRES_HOST}:{TEST_POSTGRES_PORT}/{TEST_POSTGRES_DB}"
+)
 
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
@@ -34,28 +41,40 @@ def _run(command: str, *, cwd: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=cwd, shell=True, check=True, capture_output=True, text=True)
 
 
-def _ensure_test_database(repo_root: str) -> None:
-    exists_result = subprocess.run(
-        (
-            "docker compose -f docker-compose.local.yml exec -T postgres "
-            f"psql -U {POSTGRES_USER} -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname = '{TEST_POSTGRES_DB}'\""
-        ),
-        cwd=repo_root,
-        shell=True,
-        capture_output=True,
-        text=True,
-    )
-    if exists_result.returncode != 0:
-        raise RuntimeError(f"Failed to check test database existence: {exists_result.stderr.strip()}")
+def _wait_for_postgres(timeout_seconds: int = 30) -> None:
+    start = time.time()
+    while True:
+        try:
+            with psycopg2.connect(
+                host=TEST_POSTGRES_HOST,
+                port=TEST_POSTGRES_PORT,
+                user=POSTGRES_USER,
+                password=POSTGRES_PASSWORD,
+                dbname=BASE_POSTGRES_DB,
+            ):
+                return
+        except psycopg2.OperationalError as exc:
+            if time.time() - start > timeout_seconds:
+                raise RuntimeError(f"Postgres did not become ready: {exc}") from exc
+            time.sleep(1)
 
-    if exists_result.stdout.strip() != "1":
-        _run(
-            (
-                "docker compose -f docker-compose.local.yml exec -T postgres "
-                f"psql -U {POSTGRES_USER} -d postgres -c \"CREATE DATABASE {TEST_POSTGRES_DB}\""
-            ),
-            cwd=repo_root,
-        )
+
+def _ensure_test_database() -> None:
+    with psycopg2.connect(
+        host=TEST_POSTGRES_HOST,
+        port=TEST_POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        dbname=BASE_POSTGRES_DB,
+    ) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_POSTGRES_DB,))
+            if cur.fetchone() is None:
+                cur.execute(
+                    sql.SQL("CREATE DATABASE {}")
+                    .format(sql.Identifier(TEST_POSTGRES_DB))
+                )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -63,27 +82,11 @@ def ensure_test_database() -> Generator[None, None, None]:
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-    _run("docker compose -f docker-compose.local.yml up -d postgres", cwd=repo_root)
+    if TEST_BOOTSTRAP_POSTGRES:
+        _run("docker compose -f docker-compose.local.yml up -d postgres", cwd=repo_root)
 
-    start = time.time()
-    while True:
-        result = subprocess.run(
-            (
-                "docker compose -f docker-compose.local.yml exec -T postgres "
-                f"pg_isready -U {POSTGRES_USER} -d postgres"
-            ),
-            cwd=repo_root,
-            shell=True,
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            break
-        if time.time() - start > 30:
-            raise RuntimeError(f"Postgres did not become ready: {result.stderr.strip()}")
-        time.sleep(1)
-
-    _ensure_test_database(repo_root=repo_root)
+    _wait_for_postgres()
+    _ensure_test_database()
     _run("alembic -c alembic.ini upgrade head", cwd=backend_root)
     yield
 

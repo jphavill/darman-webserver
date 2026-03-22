@@ -1,4 +1,4 @@
-.PHONY: up down logs rebuild rebuild-backend rebuild-frontend migrate prod
+.PHONY: up down logs rebuild rebuild-backend rebuild-frontend migrate prod deploy
 
 up:
 	docker compose -f docker-compose.local.yml up -d
@@ -21,5 +21,5 @@ rebuild-frontend:
 migrate:
 	docker compose -f docker-compose.local.yml exec backend alembic -c alembic.ini upgrade head
 
-prod:
-	docker compose -f docker-compose.yml up -d --build
+deploy:
+	bash scripts/deploy-prod.sh
