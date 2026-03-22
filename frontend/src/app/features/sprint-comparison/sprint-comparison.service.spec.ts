@@ -29,7 +29,7 @@ describe('SprintComparisonService', () => {
 
     const request = httpMock.expectOne((req) => req.url === '/api/v1/people' && req.params.get('limit') === '100');
     expect(request.request.method).toBe('GET');
-    request.flush([{ id: 1, name: 'Alice' }]);
+    request.flush([{ id: 1, name: 'alice' }]);
   });
 
   it('requests locations', () => {
@@ -64,7 +64,7 @@ describe('SprintComparisonService', () => {
       mode: 'progression',
       location: 'Track A',
       run_window: '20',
-      series: [{ person_id: 1, person_name: 'Alice', points: [{ x: 1, y: 9500 }] }]
+      series: [{ person_id: 1, person_name: 'alice', points: [{ x: 1, y: 9500 }] }]
     });
   });
 });

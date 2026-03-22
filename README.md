@@ -228,25 +228,29 @@ Backend pytest uses a dedicated test database and will refuse destructive test s
 
 This prevents local development data from being truncated during test runs.
 
-## Sprint Times API
-
-- `POST /api/v1/sprints` (auth required): insert a sprint record with `name`, `sprint_time_ms`, `sprint_date`, `location`
-- `GET /api/v1/sprints`: list sprint records with filtering, ordering, pagination
-- `GET /api/v1/sprints/best`: list each person's fastest sprint entry
-
-## Photos API
-
-- `GET /api/v1/photos`: list published gallery photos ordered by sort order
-- `POST /api/v1/photos/batch-upsert` (auth required): create/update photos by UUID with thumb/full URLs and captions
-
-Auth for inserts uses a bearer token:
-
-```http
-Authorization: Bearer <ADMIN_API_TOKEN>
+## Database backup and restore
+- Make backup
+```bash
+docker exec -t postgres sh -lc 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/data_backup.dump'
+docker cp postgres:/tmp/data_backup.dump ./data_backup.dump
+mv data_backup.dump /mnt/nas
 ```
 
-In local Docker mode, if `ADMIN_API_TOKEN` is omitted, backend defaults to `local-dev-token-change-me`.
+- Restore backup to clean db
 
+```bash
+docker cp ./data_backup.dump postgres:/tmp/data_backup.dump
+docker exec -it postgres sh -lc 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists /tmp/data_backup.dump'
+```
+
+- If needed nuke database
+```bash
+docker compose stop postgres
+docker compose rm -f postgres
+docker volume ls
+docker volume rm yourproject_postgres_data
+docker compose up -d postgres
+```
 ## Makefile Shortcuts
 
 Use these shortcuts for the same local Docker workflows:

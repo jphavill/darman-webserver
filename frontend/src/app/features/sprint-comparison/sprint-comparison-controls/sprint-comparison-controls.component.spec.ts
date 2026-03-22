@@ -10,22 +10,11 @@ describe('SprintComparisonControlsComponent', () => {
   it('derives selected person ids from selected runners', () => {
     const component = new SprintComparisonControlsComponent();
     component.selectedRunners = [
-      { personId: 3, personName: 'A', color: 'var(--text)', visible: true },
-      { personId: 9, personName: 'B', color: 'var(--surface)', visible: true }
+      { personId: 3, personName: 'A', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true },
+      { personId: 9, personName: 'B', color: 'var(--surface)', colorSource: 'custom', paletteSlot: null, visible: true }
     ];
 
     expect(component.selectedPersonIds).toEqual([3, 9]);
-  });
-
-  it('reports max selection status', () => {
-    const component = new SprintComparisonControlsComponent();
-    component.maxRunners = 2;
-    component.selectedRunners = [
-      { personId: 3, personName: 'A', color: 'var(--text)', visible: true },
-      { personId: 9, personName: 'B', color: 'var(--surface)', visible: true }
-    ];
-
-    expect(component.isMaxSelected).toBe(true);
   });
 
   it('exposes benchmark toggle state', () => {

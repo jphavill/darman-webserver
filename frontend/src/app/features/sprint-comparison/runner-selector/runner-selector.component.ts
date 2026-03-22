@@ -17,7 +17,6 @@ export class RunnerSelectorComponent {
   @Input() runners: AvailableRunner[] = [];
   @Input() selectedPersonIds: number[] = [];
   @Input() searchTerm = '';
-  @Input() maxSelected = 4;
 
   dropdownOpen = false;
 
@@ -54,7 +53,7 @@ export class RunnerSelectorComponent {
   }
 
   canAdd(runner: AvailableRunner): boolean {
-    return !this.isSelected(runner) && this.selectedPersonIds.length < this.maxSelected;
+    return !this.isSelected(runner);
   }
 
   addFromSearch(): void {

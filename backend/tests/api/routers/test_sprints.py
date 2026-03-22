@@ -666,7 +666,7 @@ def test_get_sprint_comparison_daily_best_returns_one_point_per_day(client, monk
     assert points == [{"x": "2026-03-01", "y": 4990, "label": "2026-03-01"}]
 
 
-def test_get_sprint_comparison_rejects_invalid_or_too_many_person_ids(client, monkeypatch):
+def test_get_sprint_comparison_rejects_invalid_person_ids(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert(
         client,
@@ -677,9 +677,28 @@ def test_get_sprint_comparison_rejects_invalid_or_too_many_person_ids(client, mo
     invalid = client.get("/v1/sprints/comparison", params={"person_ids": "999999", "mode": "progression"})
     assert invalid.status_code == 422
 
-    too_many = client.get(
+
+
+def test_get_sprint_comparison_allows_more_than_four_person_ids(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    for index in range(1, 6):
+        _insert(
+            client,
+            "secret",
+            {
+                "name": f"Runner {index}",
+                "sprint_time_ms": 5000 + index,
+                "sprint_date": "2026-03-01",
+                "location": "Track A",
+            },
+        )
+
+    person_ids = [str(_get_person_id(client, f"runner {index}")) for index in range(1, 6)]
+    response = client.get(
         "/v1/sprints/comparison",
-        params={"person_ids": "1,2,3,4,5", "mode": "progression"},
+        params={"person_ids": ",".join(person_ids), "mode": "progression", "run_window": "all"},
     )
-    assert too_many.status_code == 422
-    assert too_many.json()["detail"] == "compare up to 4 people at once"
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["series"]) == 5

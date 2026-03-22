@@ -6,10 +6,14 @@ export interface AvailableRunner {
   name: string;
 }
 
+export type RunnerColorSource = 'palette' | 'custom';
+
 export interface SelectedRunner {
   personId: number;
   personName: string;
   color: string;
+  colorSource: RunnerColorSource;
+  paletteSlot: number | null;
   visible: boolean;
 }
 

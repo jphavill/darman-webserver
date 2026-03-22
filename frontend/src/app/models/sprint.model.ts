@@ -1,3 +1,5 @@
+import { normalizeDisplayName } from '../shared/format/name-format';
+
 export interface SprintRowApi {
   id: number;
   name: string;
@@ -97,7 +99,7 @@ export type SprintTextFilterType =
 export function mapSprintRowApiToSprintRow(row: SprintRowApi): SprintRow {
   return {
     id: row.id,
-    name: row.name,
+    name: normalizeDisplayName(row.name),
     sprintTimeMs: row.sprint_time_ms,
     sprintDate: row.sprint_date,
     location: row.location,
@@ -109,7 +111,7 @@ export function mapBestTimeRowApiToBestTimeRow(row: BestTimeRowApi): BestTimeRow
   return {
     personId: row.person_id,
     sprintEntryId: row.sprint_entry_id,
-    name: row.name,
+    name: normalizeDisplayName(row.name),
     bestTimeMs: row.best_time_ms,
     sprintDate: row.sprint_date,
     location: row.location,

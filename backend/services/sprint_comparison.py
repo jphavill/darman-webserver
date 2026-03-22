@@ -24,8 +24,6 @@ def list_sprint_comparison(
     unique_person_ids = list(dict.fromkeys(person_ids))
     if not unique_person_ids:
         raise ValidationAppError("at least one person_id is required")
-    if len(unique_person_ids) > 4:
-        raise ValidationAppError("compare up to 4 people at once")
 
     people = (
         db.query(Person)

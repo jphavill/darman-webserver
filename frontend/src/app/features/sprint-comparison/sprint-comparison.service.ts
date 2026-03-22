@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { buildHttpParams } from '../../core/http/query-params';
+import { normalizeDisplayName } from '../../shared/format/name-format';
 import {
   AvailableRunner,
   ComparisonMode,
@@ -17,7 +18,9 @@ export class SprintComparisonService {
   private readonly http = inject(HttpClient);
 
   getPeople(): Observable<AvailableRunner[]> {
-    return this.http.get<AvailableRunner[]>('/api/v1/people', { params: buildHttpParams({ limit: 100 }) });
+    return this.http
+      .get<AvailableRunner[]>('/api/v1/people', { params: buildHttpParams({ limit: 100 }) })
+      .pipe(map((people) => people.map((person) => ({ ...person, name: normalizeDisplayName(person.name) }))));
   }
 
   getLocations(): Observable<string[]> {
@@ -44,7 +47,7 @@ export class SprintComparisonService {
           response.series.map(
             (series): ComparisonSeries => ({
               personId: series.person_id,
-              personName: series.person_name,
+              personName: normalizeDisplayName(series.person_name),
               points: series.points
             })
           )

@@ -5,6 +5,7 @@ import {
   AvailableRunner,
   ComparisonMode,
   RunWindow,
+  RunnerColorSource,
   SelectedRunner,
   SprintComparisonState
 } from './sprint-comparison.models';
@@ -22,7 +23,6 @@ export class SprintComparisonStore {
   private readonly runnerColorService = inject(RunnerColorService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly maxRunnerCount = 4;
   readonly state = signal<SprintComparisonState>({
     mode: 'progression',
     runWindow: 'all',
@@ -99,16 +99,16 @@ export class SprintComparisonStore {
     if (state.selectedRunners.some((item) => item.personId === runner.id)) {
       return;
     }
-    if (state.selectedRunners.length >= this.maxRunnerCount) {
-      return;
-    }
 
+    const colorAssignment = this.runnerColorService.createPaletteAssignment(state.selectedRunners);
     const selectedRunners: SelectedRunner[] = [
       ...state.selectedRunners,
       {
         personId: runner.id,
         personName: runner.name,
-        color: this.getRunnerColor(runner.id),
+        color: colorAssignment.color,
+        colorSource: colorAssignment.colorSource,
+        paletteSlot: colorAssignment.paletteSlot,
         visible: true
       }
     ];
@@ -126,12 +126,21 @@ export class SprintComparisonStore {
   }
 
   onRunnerColorChange(update: { personId: number; color: string }): void {
+    const customAssignment = this.runnerColorService.createCustomAssignment(update.color);
     const selectedRunners = this.state().selectedRunners.map((runner) =>
-      runner.personId === update.personId ? { ...runner, color: update.color } : runner
+      runner.personId === update.personId
+        ? {
+            ...runner,
+            color: customAssignment.color,
+            colorSource: customAssignment.colorSource,
+            paletteSlot: customAssignment.paletteSlot
+          }
+        : runner
     );
 
     this.patchState({ selectedRunners });
-    this.preferencesRepository.persistRunnerColor(update.personId, update.color);
+    this.preferencesRepository.persistLegacyRunnerColor(update.personId, update.color);
+    this.persistPreferences();
   }
 
   onRunnerVisibilityChange(update: { personId: number; visible: boolean }): void {
@@ -192,23 +201,36 @@ export class SprintComparisonStore {
     }
 
     const state = this.state();
+    const legacyColors = this.preferencesRepository.readLegacyRunnerColors();
     const runnerById = new Map(state.availableRunners.map((runner) => [runner.id, runner]));
     const selectedRunners = preferences.selectedRunners
-      .map((item) => {
+      .reduce<SelectedRunner[]>((restored, item) => {
         const runner = runnerById.get(item.personId);
         if (!runner) {
-          return null;
+          return restored;
         }
 
-        return {
+        const colorAssignment = this.runnerColorService.createAssignmentFromPreference(
+          {
+            color: item.color,
+            colorSource: this.asRunnerColorSource(item.colorSource),
+            paletteSlot: item.paletteSlot
+          },
+          restored,
+          legacyColors[String(item.personId)]
+        );
+
+        restored.push({
           personId: runner.id,
           personName: runner.name,
-          color: this.getRunnerColor(runner.id),
+          color: colorAssignment.color,
+          colorSource: colorAssignment.colorSource,
+          paletteSlot: colorAssignment.paletteSlot,
           visible: item.visible
-        } satisfies SelectedRunner;
-      })
-      .filter((runner): runner is SelectedRunner => runner !== null)
-      .slice(0, this.maxRunnerCount);
+        });
+
+        return restored;
+      }, []);
 
     this.patchState({
       mode: preferences.mode,
@@ -217,10 +239,6 @@ export class SprintComparisonStore {
       showBenchmarks: preferences.showBenchmarks,
       selectedRunners
     });
-  }
-
-  private getRunnerColor(personId: number): string {
-    return this.runnerColorService.colorForRunner(personId, this.preferencesRepository.readRunnerColors());
   }
 
   private persistPreferences(): void {
@@ -232,7 +250,10 @@ export class SprintComparisonStore {
       showBenchmarks: state.showBenchmarks,
       selectedRunners: state.selectedRunners.map((runner) => ({
         personId: runner.personId,
-        visible: runner.visible
+        visible: runner.visible,
+        color: runner.color,
+        colorSource: runner.colorSource,
+        paletteSlot: runner.paletteSlot
       }))
     };
 
@@ -241,5 +262,9 @@ export class SprintComparisonStore {
 
   private patchState(patch: Partial<SprintComparisonState>): void {
     this.state.update((current) => ({ ...current, ...patch }));
+  }
+
+  private asRunnerColorSource(value: RunnerColorSource | undefined): RunnerColorSource | undefined {
+    return value === 'palette' || value === 'custom' ? value : undefined;
   }
 }

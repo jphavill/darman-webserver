@@ -12,7 +12,9 @@ export const RUNNER_PALETTE_TOKENS = [
   '--runner-palette-3',
   '--runner-palette-4',
   '--runner-palette-5',
-  '--runner-palette-6'
+  '--runner-palette-6',
+  '--runner-palette-7',
+  '--runner-palette-8'
 ] as const;
 
 export function resolveThemeToken(token: string, fallback: string): string {

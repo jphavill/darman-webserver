@@ -108,12 +108,6 @@
   padding-left: 0.5rem;
 }
 
-.runner-limit {
-  justify-self: end;
-  color: var(--warning);
-  font-size: 0.73rem;
-}
-
 @media (max-width: 760px) {
   .control-rail {
     display: grid;

@@ -28,7 +28,6 @@ export class SprintComparisonControlsComponent {
   @Input() availableRunners: AvailableRunner[] = [];
   @Input() availableLocations: string[] = [];
   @Input() selectedRunners: SelectedRunner[] = [];
-  @Input() maxRunners = 4;
 
   @Output() readonly modeChange = new EventEmitter<ComparisonMode>();
   @Output() readonly runWindowChange = new EventEmitter<RunWindow>();
@@ -56,10 +55,6 @@ export class SprintComparisonControlsComponent {
 
   get selectedPersonIds(): number[] {
     return this.selectedRunners.map((runner) => runner.personId);
-  }
-
-  get isMaxSelected(): boolean {
-    return this.selectedRunners.length >= this.maxRunners;
   }
 
   toggleBenchmarks(): void {

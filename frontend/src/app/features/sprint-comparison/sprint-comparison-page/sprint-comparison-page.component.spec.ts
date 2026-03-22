@@ -76,6 +76,8 @@ describe('SprintComparisonPageComponent', () => {
 
     expect(component.state().selectedRunners).toHaveLength(1);
     expect(component.state().selectedRunners[0]?.personId).toBe(2);
+    expect(component.state().selectedRunners[0]?.colorSource).toBe('palette');
+    expect(component.state().selectedRunners[0]?.paletteSlot).toBe(0);
     expect(apiMock.getComparison).toHaveBeenCalledWith({
       mode: 'progression',
       personIds: [2],
@@ -99,7 +101,31 @@ describe('SprintComparisonPageComponent', () => {
     component.onRunnerColorChange({ personId: 2, color: 'var(--accent)' });
 
     expect(component.state().selectedRunners[0]?.color).toBe('var(--accent)');
+    expect(component.state().selectedRunners[0]?.colorSource).toBe('custom');
+    expect(component.state().selectedRunners[0]?.paletteSlot).toBeNull();
     expect(localStorage.getItem('sprintComparisonRunnerColors')).toContain('"2":"var(--accent)"');
+  });
+
+  it('assigns unique palette slots and reuses freed slots after custom color changes', () => {
+    const apiMock = createApiMock();
+    apiMock.getPeople.mockReturnValue(of([]));
+    apiMock.getLocations.mockReturnValue(of([]));
+    apiMock.getComparison.mockReturnValue(of([]));
+
+    TestBed.configureTestingModule({
+      providers: [SprintComparisonStore, { provide: SprintComparisonService, useValue: apiMock }]
+    });
+    const component = TestBed.runInInjectionContext(() => new SprintComparisonPageComponent());
+
+    component.onAddRunner({ id: 2, name: 'Bob' });
+    component.onAddRunner({ id: 3, name: 'Alice' });
+
+    expect(component.state().selectedRunners.map((runner) => runner.paletteSlot)).toEqual([0, 1]);
+
+    component.onRunnerColorChange({ personId: 2, color: 'var(--accent)' });
+    component.onAddRunner({ id: 4, name: 'Nina' });
+
+    expect(component.state().selectedRunners.find((runner) => runner.personId === 4)?.paletteSlot).toBe(0);
   });
 
   it('updates benchmark toggle and persists preferences', () => {

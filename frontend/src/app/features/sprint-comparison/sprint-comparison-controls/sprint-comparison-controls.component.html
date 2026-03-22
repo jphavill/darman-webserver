@@ -28,7 +28,6 @@
         [runners]="availableRunners"
         [selectedPersonIds]="selectedPersonIds"
         [searchTerm]="runnerSearch"
-        [maxSelected]="maxRunners"
         (searchTermChange)="runnerSearchChange.emit($event)"
         (addRunner)="addRunner.emit($event)"
       ></app-runner-selector>
@@ -61,5 +60,4 @@
     ></app-selected-runner-list>
   </div>
 
-  <p class="runner-limit" *ngIf="isMaxSelected">Compare up to 4 runners at once.</p>
 </aside>

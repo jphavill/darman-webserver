@@ -1,7 +1,7 @@
 <section class="chart-card">
   <div class="state" *ngIf="loading">Loading sprint comparison data...</div>
   <div class="state" *ngIf="!loading && error">{{ error }}</div>
-  <div class="state" *ngIf="!loading && !error && !hasSelectedRunners">Select 1 to 4 runners to compare.</div>
+  <div class="state" *ngIf="!loading && !error && !hasSelectedRunners">Select at least 1 runner to compare.</div>
   <div class="state" *ngIf="!loading && !error && hasSelectedRunners && !hasData">
     No sprint data matches the selected runners and location.
   </div>

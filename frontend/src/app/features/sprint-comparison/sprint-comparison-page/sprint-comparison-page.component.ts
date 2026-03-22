@@ -25,7 +25,6 @@ export class SprintComparisonPageComponent implements OnInit {
 
   readonly state = computed<SprintComparisonState>(() => this.store.state());
   readonly displayUnit = this.sprintDisplayUnit.unit;
-  readonly maxRunnerCount = this.store.maxRunnerCount;
 
   ngOnInit(): void {
     this.store.loadLookups();

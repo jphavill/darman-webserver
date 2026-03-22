@@ -17,8 +17,8 @@ describe('SprintComparisonChartComponent', () => {
   it('shows data presence based on visible series only', () => {
     const component = new SprintComparisonChartComponent();
     component.selectedRunners = [
-      { personId: 1, personName: 'Alice', color: 'var(--text)', visible: true },
-      { personId: 2, personName: 'Bob', color: 'var(--accent)', visible: false }
+      { personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true },
+      { personId: 2, personName: 'Bob', color: 'var(--accent)', colorSource: 'palette', paletteSlot: 1, visible: false }
     ];
     component.series = [
       { personId: 1, personName: 'Alice', points: [{ x: 1, y: 9800 }] },
@@ -27,14 +27,14 @@ describe('SprintComparisonChartComponent', () => {
 
     expect(component.hasData).toBe(true);
     expect(component.legendRunners).toEqual([
-      { personId: 1, personName: 'Alice', color: 'var(--text)', visible: true }
+      { personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }
     ]);
   });
 
   it('adds benchmark lines when enabled', () => {
     const component = new SprintComparisonChartComponent();
     component.mode = 'progression';
-    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', visible: true }];
+    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }];
     component.series = [{ personId: 1, personName: 'Alice', points: [{ x: 1, y: 9800 }] }];
     component.showBenchmarks = true;
 
@@ -49,7 +49,7 @@ describe('SprintComparisonChartComponent', () => {
   it('scales y-axis to include benchmarks when enabled', () => {
     const component = new SprintComparisonChartComponent();
     component.mode = 'progression';
-    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', visible: true }];
+    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }];
     component.series = [{ personId: 1, personName: 'Alice', points: [{ x: 1, y: 9800 }] }];
 
     const withoutBenchmarks = (component as any).buildProgressionOption();
@@ -65,7 +65,7 @@ describe('SprintComparisonChartComponent', () => {
   it('updates y-axis label for selected display unit', () => {
     const component = new SprintComparisonChartComponent();
     component.displayUnit = 'kmh';
-    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', visible: true }];
+    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }];
     component.series = [{ personId: 1, personName: 'Alice', points: [{ x: 1, y: 10000 }] }];
 
     const option = (component as any).buildProgressionOption();
@@ -77,7 +77,7 @@ describe('SprintComparisonChartComponent', () => {
     const component = new SprintComparisonChartComponent();
     component.displayUnit = 'kmh';
     component.mode = 'progression';
-    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', visible: true }];
+    component.selectedRunners = [{ personId: 1, personName: 'Alice', color: 'var(--text)', colorSource: 'palette', paletteSlot: 0, visible: true }];
   component.series = [{ personId: 1, personName: 'Alice', points: [{ x: 1, y: 10000 }] }];
 
     const option = (component as any).buildProgressionOption();

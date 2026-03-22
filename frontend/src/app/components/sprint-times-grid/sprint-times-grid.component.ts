@@ -27,6 +27,7 @@ import {
   formatSprintMs,
   getSprintDisplayUnitMeta
 } from '../../shared/format/sprint-format';
+import { normalizeDisplayName } from '../../shared/format/name-format';
 import { SprintDisplayUnitService } from '../../shared/preferences/sprint-display-unit.service';
 import { SprintUnitToggleComponent } from '../../shared/sprint-unit-toggle/sprint-unit-toggle.component';
 
@@ -98,7 +99,7 @@ export class SprintTimesGridComponent {
         maxNumConditions: 1
       },
       sort: 'asc',
-      valueFormatter: (params) => this.formatName(params.value as string)
+      valueFormatter: (params) => normalizeDisplayName(params.value as string) || '-'
     },
     {
       field: 'sprintTimeMs',
@@ -540,14 +541,6 @@ export class SprintTimesGridComponent {
     window.sessionStorage.setItem(ADVANCED_GRID_STATE_STORAGE_KEY, JSON.stringify(this.advancedGridState));
   }
 
-  private formatName(value: string): string {
-    if (!value) {
-      return '-';
-    }
-
-    return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
-  }
-
   private getSprintTimeHeaderLabel(): string {
     return getSprintDisplayUnitMeta(this.sprintDisplayUnit.unit()).tableHeaderLabel;
   }
@@ -602,7 +595,7 @@ export class SprintTimesGridComponent {
     wrapper.className = 'leaderboard-name-cell';
 
     const label = document.createElement('span');
-    label.textContent = `${this.getLeaderboardMedalPrefix(params.node?.rowIndex)}${this.formatName(params.value ?? '')}`;
+    label.textContent = `${this.getLeaderboardMedalPrefix(params.node?.rowIndex)}${normalizeDisplayName(params.value) || '-'}`;
     wrapper.append(label);
 
     return wrapper;

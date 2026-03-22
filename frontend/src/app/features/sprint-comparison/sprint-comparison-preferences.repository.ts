@@ -1,13 +1,21 @@
 import { Injectable, inject } from '@angular/core';
 import { BROWSER_STORAGE } from '../../core/browser/browser-globals';
-import { ComparisonMode, RunWindow } from './sprint-comparison.models';
+import { ComparisonMode, RunWindow, RunnerColorSource } from './sprint-comparison.models';
+
+export interface PersistedRunnerPreference {
+  personId: number;
+  visible: boolean;
+  color?: string;
+  colorSource?: RunnerColorSource;
+  paletteSlot?: number | null;
+}
 
 export interface PersistedPreferences {
   mode: ComparisonMode;
   runWindow: RunWindow;
   location: string | null;
   showBenchmarks: boolean;
-  selectedRunners: Array<{ personId: number; visible: boolean }>;
+  selectedRunners: PersistedRunnerPreference[];
 }
 
 @Injectable({
@@ -18,7 +26,7 @@ export class SprintComparisonPreferencesRepository {
   private readonly colorsStorageKey = 'sprintComparisonRunnerColors';
   private readonly preferencesStorageKey = 'sprintComparisonPreferences';
 
-  readRunnerColors(): Record<string, string> {
+  readLegacyRunnerColors(): Record<string, string> {
     try {
       const raw = this.storage.getItem(this.colorsStorageKey);
       if (!raw) {
@@ -32,8 +40,8 @@ export class SprintComparisonPreferencesRepository {
     }
   }
 
-  persistRunnerColor(personId: number, color: string): void {
-    const current = this.readRunnerColors();
+  persistLegacyRunnerColor(personId: number, color: string): void {
+    const current = this.readLegacyRunnerColors();
     current[String(personId)] = color;
     this.storage.setItem(this.colorsStorageKey, JSON.stringify(current));
   }
@@ -62,7 +70,14 @@ export class SprintComparisonPreferencesRepository {
         selectedRunners: parsed.selectedRunners
           .map((runner) => ({
             personId: Number(runner.personId),
-            visible: runner.visible !== false
+            visible: runner.visible !== false,
+            color: typeof runner.color === 'string' ? runner.color : undefined,
+            colorSource: runner.colorSource === 'palette' || runner.colorSource === 'custom' ? runner.colorSource : undefined,
+            paletteSlot:
+              runner.paletteSlot === null ||
+              (typeof runner.paletteSlot === 'number' && Number.isInteger(runner.paletteSlot) && runner.paletteSlot >= 0)
+                ? runner.paletteSlot
+                : undefined
           }))
           .filter((runner) => Number.isInteger(runner.personId) && runner.personId > 0)
       };
