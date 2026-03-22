@@ -13,14 +13,6 @@ def _delete(client, token: str, sprint_id: int):
     )
 
 
-def _update(client, token: str, sprint_id: int, payload: dict):
-    return client.post(
-        f"/v1/sprints/{sprint_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        json=payload,
-    )
-
-
 def _patch_update(client, token: str, sprint_id: int, payload: dict):
     return client.patch(
         f"/v1/sprints/{sprint_id}",
@@ -199,7 +191,7 @@ def test_update_sprint_updates_runner_by_existing_name(client, monkeypatch):
         },
     )
 
-    response = _update(client, "secret", original.json()["id"], {"name": "Jamie"})
+    response = _patch_update(client, "secret", original.json()["id"], {"name": "Jamie"})
     assert response.status_code == 200
     assert response.json()["name"] == "Jamie"
 
@@ -256,7 +248,7 @@ def test_update_sprint_supports_person_id(client, monkeypatch):
     )
     jamie_id = _get_person_id(client, "jam")
 
-    response = _update(client, "secret", original.json()["id"], {"person_id": jamie_id})
+    response = _patch_update(client, "secret", original.json()["id"], {"person_id": jamie_id})
     assert response.status_code == 200
     assert response.json()["name"] == "Jamie"
 
@@ -274,7 +266,7 @@ def test_update_sprint_rejects_unknown_name(client, monkeypatch):
         },
     )
 
-    response = _update(client, "secret", created.json()["id"], {"name": "New Person"})
+    response = _patch_update(client, "secret", created.json()["id"], {"name": "New Person"})
     assert response.status_code == 422
     assert response.json()["detail"] == "person name does not exist"
 
@@ -303,7 +295,7 @@ def test_update_sprint_rejects_name_and_person_id(client, monkeypatch):
     )
     jamie_id = _get_person_id(client, "jam")
 
-    response = _update(
+    response = _patch_update(
         client,
         "secret",
         created.json()["id"],
@@ -331,7 +323,7 @@ def test_update_sprint_rejects_inactive_person_id(client, monkeypatch, db_sessio
     db_session.add(inactive)
     db_session.commit()
 
-    response = _update(client, "secret", created.json()["id"], {"person_id": inactive.id})
+    response = _patch_update(client, "secret", created.json()["id"], {"person_id": inactive.id})
     assert response.status_code == 422
     assert response.json()["detail"] == "person_id is invalid"
 

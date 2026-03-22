@@ -60,14 +60,16 @@ def _wait_for_postgres(timeout_seconds: int = 30) -> None:
 
 
 def _ensure_test_database() -> None:
-    with psycopg2.connect(
+    conn = psycopg2.connect(
         host=TEST_POSTGRES_HOST,
         port=TEST_POSTGRES_PORT,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
         dbname=BASE_POSTGRES_DB,
-    ) as conn:
-        conn.autocommit = True
+    )
+    conn.autocommit = True
+
+    try:
         with conn.cursor() as cur:
             cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (TEST_POSTGRES_DB,))
             if cur.fetchone() is None:
@@ -75,6 +77,8 @@ def _ensure_test_database() -> None:
                     sql.SQL("CREATE DATABASE {}")
                     .format(sql.Identifier(TEST_POSTGRES_DB))
                 )
+    finally:
+        conn.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
