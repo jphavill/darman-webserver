@@ -219,6 +219,64 @@ alembic -c backend/alembic.ini revision --autogenerate -m "describe change"
 
 If you see `connection to server at "localhost", port 5432 failed: Connection refused`, it means your host process cannot reach Postgres yet. In local Docker mode, prefer running migrations via `make migrate` (inside the backend container).
 
+## Running Tests
+
+### Backend tests (pytest)
+
+Backend tests run from `backend/` and use the root `.venv` Python environment.
+
+```bash
+# from repo root
+source .venv/bin/activate
+cd backend
+pytest
+```
+
+Run a single backend test file:
+
+```bash
+cd backend
+pytest tests/services/test_photos.py
+```
+
+Run a single backend test function:
+
+```bash
+cd backend
+pytest tests/services/test_photos.py::test_update_photo_supports_partial_updates
+```
+
+### Frontend tests (Vitest)
+
+Frontend tests run from `frontend/`.
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+Run frontend tests in watch mode:
+
+```bash
+cd frontend
+npm run test:watch
+```
+
+Run a single frontend spec file:
+
+```bash
+cd frontend
+npm test -- src/app/pages/sprint-page/sprint-page.component.spec.ts
+```
+
+Run a single frontend test by name:
+
+```bash
+cd frontend
+npm test -- -t "creates the component class"
+```
+
 ## Backend Test Database Safety
 
 Backend pytest uses a dedicated test database and will refuse destructive test setup unless the active database name ends with `_test`.

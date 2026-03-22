@@ -424,7 +424,7 @@ export class SprintComparisonChartComponent implements AfterViewInit, OnChanges,
 
   private measureTextWidth(text: string): number {
     const fallbackWidthPerChar = 7;
-    if (typeof document === 'undefined') {
+    if (typeof document === 'undefined' || !this.chartContainer) {
       return text.length * fallbackWidthPerChar;
     }
 
