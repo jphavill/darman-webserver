@@ -104,7 +104,7 @@ log "Pulling latest main"
 run_in_dir "$REPO_ROOT" git pull --ff-only origin main
 
 log "Running frontend tests in Docker"
-run_in_dir "$REPO_ROOT" docker run --rm -v "$REPO_ROOT/frontend:/app" -w /app node:20-alpine sh -lc "npm ci && npm test"
+run_in_dir "$REPO_ROOT" docker run --rm -v "$REPO_ROOT/frontend:/app" -w /app node:22-alpine sh -lc "npm ci && npm test"
 
 log "Running backend tests in Docker"
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d postgres
@@ -122,7 +122,7 @@ run_cmd find "$BACKUP_DIR" -maxdepth 1 -type f -name 'data_backup_*.dump' -mtime
 
 log "Deploying production stack"
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml down
-run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml build --pull
+run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml build
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d --remove-orphans
 
 log "Deploy complete"
