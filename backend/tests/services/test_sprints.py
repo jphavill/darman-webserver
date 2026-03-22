@@ -231,6 +231,37 @@ def test_list_sprints_honors_text_filter_types(db_session):
     assert not_contains_result.rows[0].name == "Blake"
 
 
+def test_list_sprints_supports_date_not_filter(db_session):
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10000, sprint_date=date(2026, 3, 1), location="North"),
+    )
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10100, sprint_date=date(2026, 3, 2), location="North"),
+    )
+
+    result = list_sprints(
+        db=db_session,
+        limit=10,
+        offset=0,
+        sort_by="sprint_date",
+        sort_dir="asc",
+        name=None,
+        name_filter_type="contains",
+        location=None,
+        location_filter_type="contains",
+        date_from=None,
+        date_to=None,
+        min_time_ms=None,
+        max_time_ms=None,
+        date_not=date(2026, 3, 1),
+    )
+
+    assert result.total == 1
+    assert result.rows[0].sprint_date == date(2026, 3, 2)
+
+
 def test_update_sprint_entry_reassigns_to_existing_person_name(db_session):
     original = create_sprint_entry(
         db_session,

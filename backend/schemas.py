@@ -79,6 +79,7 @@ class SprintListQuery(BaseModel):
     location_filter_type: TextFilterType = "contains"
     date_from: date | None = None
     date_to: date | None = None
+    date_not: date | None = None
     min_time_ms: int | None = Field(default=None, gt=0)
     max_time_ms: int | None = Field(default=None, gt=0)
 
@@ -94,6 +95,7 @@ class BestTimesQuery(BaseModel):
     location_filter_type: TextFilterType = "contains"
     date_from: date | None = None
     date_to: date | None = None
+    date_not: date | None = None
 
 
 class PersonRow(BaseModel):

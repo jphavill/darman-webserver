@@ -24,6 +24,7 @@ def list_sprints(
     date_to: date | None,
     min_time_ms: int | None,
     max_time_ms: int | None,
+    date_not: date | None = None,
 ) -> SprintListResponse:
     query = db.query(SprintEntry, Person.name.label("name")).join(Person, SprintEntry.person_id == Person.id)
     query = _apply_common_person_entry_filters(
@@ -34,6 +35,7 @@ def list_sprints(
         location_filter_type=location_filter_type,
         date_from=date_from,
         date_to=date_to,
+        date_not=date_not,
         location_column=SprintEntry.location,
         sprint_date_column=SprintEntry.sprint_date,
     )
@@ -83,6 +85,7 @@ def list_best_times(
     location_filter_type: TextFilterType,
     date_from: date | None,
     date_to: date | None,
+    date_not: date | None = None,
 ) -> BestTimesResponse:
     ranked_entries = (
         db.query(
@@ -124,6 +127,7 @@ def list_best_times(
         location_filter_type=location_filter_type,
         date_from=date_from,
         date_to=date_to,
+        date_not=date_not,
         location_column=ranked_entries.c.location,
         sprint_date_column=ranked_entries.c.sprint_date,
     )
@@ -174,6 +178,7 @@ def _apply_common_person_entry_filters(
     location_filter_type: TextFilterType,
     date_from: date | None,
     date_to: date | None,
+    date_not: date | None,
     location_column: Any,
     sprint_date_column: Any,
 ) -> Query:
@@ -190,6 +195,8 @@ def _apply_common_person_entry_filters(
         filters.append(sprint_date_column >= date_from)
     if date_to:
         filters.append(sprint_date_column <= date_to)
+    if date_not:
+        filters.append(sprint_date_column != date_not)
 
     if filters:
         return query.filter(and_(*filters))

@@ -49,4 +49,9 @@ describe('sprint-format helpers', () => {
   it('preserves non-date strings', () => {
     expect(formatDisplayDate('not-a-date')).toBe('not-a-date');
   });
+
+  it('formats date-only values as calendar dates without timezone shift', () => {
+    expect(formatDisplayDate('2026-03-19')).toBe(new Date(2026, 2, 19).toLocaleDateString());
+  });
+
 });

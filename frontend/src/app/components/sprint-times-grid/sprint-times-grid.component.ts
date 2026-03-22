@@ -365,19 +365,7 @@ export class SprintTimesGridComponent {
     }
 
     const dateFilter = filterModel['sprintDate'] as DateFilterModel | undefined;
-    if (dateFilter?.dateFrom) {
-      if (dateFilter.type === 'lessThan' || dateFilter.type === 'lessThanOrEqual') {
-        query.date_to = dateFilter.dateFrom;
-      } else if (dateFilter.type === 'greaterThan' || dateFilter.type === 'greaterThanOrEqual') {
-        query.date_from = dateFilter.dateFrom;
-      } else if (dateFilter.type === 'equals') {
-        query.date_from = dateFilter.dateFrom;
-        query.date_to = dateFilter.dateFrom;
-      } else if (dateFilter.type === 'inRange' && dateFilter.dateTo) {
-        query.date_from = dateFilter.dateFrom;
-        query.date_to = dateFilter.dateTo;
-      }
-    }
+    this.applyDateFilterToQuery(dateFilter, query);
 
     return query;
   }
@@ -588,6 +576,91 @@ export class SprintTimesGridComponent {
     } else if (timeFilter.type === 'greaterThan' || timeFilter.type === 'greaterThanOrEqual') {
       query.min_time_ms = minMs;
     }
+  }
+
+  private applyDateFilterToQuery(dateFilter: DateFilterModel | undefined, query: SprintQuery): void {
+    const dateFrom = this.normalizeDateFilterValue(dateFilter?.dateFrom);
+    if (!dateFrom || !dateFilter?.type) {
+      return;
+    }
+
+    if (dateFilter.type === 'lessThan') {
+      query.date_to = this.offsetDateParam(dateFrom, -1);
+      return;
+    }
+
+    if (dateFilter.type === 'lessThanOrEqual') {
+      query.date_to = dateFrom;
+      return;
+    }
+
+    if (dateFilter.type === 'greaterThan') {
+      query.date_from = this.offsetDateParam(dateFrom, 1);
+      return;
+    }
+
+    if (dateFilter.type === 'greaterThanOrEqual') {
+      query.date_from = dateFrom;
+      return;
+    }
+
+    if (dateFilter.type === 'equals') {
+      query.date_from = dateFrom;
+      query.date_to = dateFrom;
+      return;
+    }
+
+    if (dateFilter.type === 'notEqual') {
+      query.date_not = dateFrom;
+      return;
+    }
+
+    const dateTo = this.normalizeDateFilterValue(dateFilter.dateTo);
+    if (dateFilter.type === 'inRange' && dateTo) {
+      if (dateFrom <= dateTo) {
+        query.date_from = dateFrom;
+        query.date_to = dateTo;
+      } else {
+        query.date_from = dateTo;
+        query.date_to = dateFrom;
+      }
+    }
+  }
+
+  private normalizeDateFilterValue(value: unknown): string | null {
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) {
+        return null;
+      }
+      return this.toDateParam(value);
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+      return trimmedValue;
+    }
+
+    const parsedDate = new Date(trimmedValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    return this.toDateParam(parsedDate);
+  }
+
+  private offsetDateParam(dateParam: string, offsetDays: number): string {
+    const [year, month, day] = dateParam.split('-').map((part) => Number(part));
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + offsetDays);
+    return this.toDateParam(date);
   }
 
   private renderLeaderboardNameCell(params: ICellRendererParams<SprintRow, string>): HTMLElement {

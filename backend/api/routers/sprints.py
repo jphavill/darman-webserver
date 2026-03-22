@@ -75,6 +75,7 @@ def list_sprints_route(
         location_filter_type=query.location_filter_type,
         date_from=query.date_from,
         date_to=query.date_to,
+        date_not=query.date_not,
         min_time_ms=query.min_time_ms,
         max_time_ms=query.max_time_ms,
     )
@@ -97,6 +98,7 @@ def list_best_times_route(
         location_filter_type=query.location_filter_type,
         date_from=query.date_from,
         date_to=query.date_to,
+        date_not=query.date_not,
     )
 
 

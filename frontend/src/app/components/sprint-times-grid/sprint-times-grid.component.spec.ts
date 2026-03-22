@@ -115,6 +115,143 @@ describe('SprintTimesGridComponent', () => {
     expect(query.sort_by).toBe('sprint_time_ms');
     expect(query.sort_dir).toBe('desc');
   });
+
+  it('normalizes date filter values before building advanced query', () => {
+    const { component } = setup();
+
+    const query = (
+      component as {
+        buildAdvancedQuery: (params: {
+          sortModel: Array<{ colId: string; sort: 'asc' | 'desc' }>;
+          filterModel: Record<string, unknown>;
+          startRow: number;
+          endRow: number;
+        }) => Record<string, string | number | undefined>;
+      }
+    ).buildAdvancedQuery({
+      sortModel: [],
+      filterModel: {
+        sprintDate: {
+          filterType: 'date',
+          type: 'equals',
+          dateFrom: '2026-03-15 00:00:00'
+        }
+      },
+      startRow: 0,
+      endRow: 25
+    });
+
+    expect(query.date_from).toBe('2026-03-15');
+    expect(query.date_to).toBe('2026-03-15');
+  });
+
+  it('treats Date filter values as local calendar dates without timezone shift', () => {
+    const { component } = setup();
+
+    const query = (
+      component as {
+        buildAdvancedQuery: (params: {
+          sortModel: Array<{ colId: string; sort: 'asc' | 'desc' }>;
+          filterModel: Record<string, unknown>;
+          startRow: number;
+          endRow: number;
+        }) => Record<string, string | number | undefined>;
+      }
+    ).buildAdvancedQuery({
+      sortModel: [],
+      filterModel: {
+        sprintDate: {
+          filterType: 'date',
+          type: 'equals',
+          dateFrom: new Date(2026, 2, 19)
+        }
+      },
+      startRow: 0,
+      endRow: 25
+    });
+
+    expect(query.date_from).toBe('2026-03-19');
+    expect(query.date_to).toBe('2026-03-19');
+  });
+
+  it('uses exclusive bounds for greater-than and less-than date filters', () => {
+    const { component } = setup();
+
+    const lessThanQuery = (
+      component as {
+        buildAdvancedQuery: (params: {
+          sortModel: Array<{ colId: string; sort: 'asc' | 'desc' }>;
+          filterModel: Record<string, unknown>;
+          startRow: number;
+          endRow: number;
+        }) => Record<string, string | number | undefined>;
+      }
+    ).buildAdvancedQuery({
+      sortModel: [],
+      filterModel: {
+        sprintDate: {
+          filterType: 'date',
+          type: 'lessThan',
+          dateFrom: '2026-03-15'
+        }
+      },
+      startRow: 0,
+      endRow: 25
+    });
+
+    const greaterThanQuery = (
+      component as {
+        buildAdvancedQuery: (params: {
+          sortModel: Array<{ colId: string; sort: 'asc' | 'desc' }>;
+          filterModel: Record<string, unknown>;
+          startRow: number;
+          endRow: number;
+        }) => Record<string, string | number | undefined>;
+      }
+    ).buildAdvancedQuery({
+      sortModel: [],
+      filterModel: {
+        sprintDate: {
+          filterType: 'date',
+          type: 'greaterThan',
+          dateFrom: '2026-03-15'
+        }
+      },
+      startRow: 0,
+      endRow: 25
+    });
+
+    expect(lessThanQuery.date_to).toBe('2026-03-14');
+    expect(greaterThanQuery.date_from).toBe('2026-03-16');
+  });
+
+  it('maps not-equal date filter to date_not query parameter', () => {
+    const { component } = setup();
+
+    const query = (
+      component as {
+        buildAdvancedQuery: (params: {
+          sortModel: Array<{ colId: string; sort: 'asc' | 'desc' }>;
+          filterModel: Record<string, unknown>;
+          startRow: number;
+          endRow: number;
+        }) => Record<string, string | number | undefined>;
+      }
+    ).buildAdvancedQuery({
+      sortModel: [],
+      filterModel: {
+        sprintDate: {
+          filterType: 'date',
+          type: 'notEqual',
+          dateFrom: '2026-03-15'
+        }
+      },
+      startRow: 0,
+      endRow: 25
+    });
+
+    expect(query.date_not).toBe('2026-03-15');
+  });
 });
 
 afterEach(() => {

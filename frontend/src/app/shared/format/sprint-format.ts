@@ -112,6 +112,14 @@ export function formatDisplayDate(value: string): string {
     return '-';
   }
 
+  const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const monthIndex = Number(dateOnlyMatch[2]) - 1;
+    const day = Number(dateOnlyMatch[3]);
+    return new Date(year, monthIndex, day).toLocaleDateString();
+  }
+
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
     return value;

@@ -198,6 +198,17 @@
   background-color: rgba(143, 184, 232, 0.16);
 }
 
+:host ::ng-deep .sprint-grid.ag-theme-quartz .ag-filter-filter .ag-input-wrapper::before {
+  display: none !important;
+  content: none !important;
+  background-image: none !important;
+}
+
+:host ::ng-deep .sprint-grid.ag-theme-quartz .ag-filter-filter input.ag-text-field-input,
+:host ::ng-deep .sprint-grid.ag-theme-quartz .ag-filter-filter input.ag-number-field-input {
+  padding-left: var(--ag-grid-size) !important;
+}
+
 .error-message {
   margin-top: 0.9rem;
   color: var(--error);

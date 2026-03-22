@@ -69,6 +69,7 @@ export interface SprintQuery {
   location_filter_type?: SprintTextFilterType;
   date_from?: string;
   date_to?: string;
+  date_not?: string;
   min_time_ms?: number;
   max_time_ms?: number;
 }
