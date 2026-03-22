@@ -9,6 +9,7 @@ import {
 import { SprintComparisonControlsComponent } from '../sprint-comparison-controls/sprint-comparison-controls.component';
 import { SprintComparisonChartComponent } from '../sprint-comparison-chart/sprint-comparison-chart.component';
 import { SprintComparisonStore } from '../sprint-comparison.store';
+import { SprintDisplayUnitService } from '../../../shared/preferences/sprint-display-unit.service';
 
 @Component({
   selector: 'app-sprint-comparison-page',
@@ -20,8 +21,10 @@ import { SprintComparisonStore } from '../sprint-comparison.store';
 })
 export class SprintComparisonPageComponent implements OnInit {
   private readonly store = inject(SprintComparisonStore);
+  private readonly sprintDisplayUnit = inject(SprintDisplayUnitService);
 
   readonly state = computed<SprintComparisonState>(() => this.store.state());
+  readonly displayUnit = this.sprintDisplayUnit.unit;
   readonly maxRunnerCount = this.store.maxRunnerCount;
 
   ngOnInit(): void {
@@ -42,6 +45,10 @@ export class SprintComparisonPageComponent implements OnInit {
 
   onRunnerSearchChange(search: string): void {
     this.store.onRunnerSearchChange(search);
+  }
+
+  onShowBenchmarksChange(showBenchmarks: boolean): void {
+    this.store.onShowBenchmarksChange(showBenchmarks);
   }
 
   onAddRunner(runner: AvailableRunner): void {

@@ -58,3 +58,13 @@ If you want interactive watch mode while developing tests:
 ```bash
 npm run test:watch
 ```
+
+## Theme Color Tokens
+
+All frontend hex color values must be defined in `src/theme.css` and consumed elsewhere via CSS variables.
+
+- In `.css` files, use `var(--token-name)`.
+- In `.ts` files (for chart libraries or inline styles), resolve tokens through `src/app/shared/theme/theme-tokens.ts`.
+- Do not hardcode new hex colors in components, services, templates, or specs.
+
+Pre-commit enforcement is configured at the repo root (`.pre-commit-config.yaml`) and runs `scripts/check_frontend_hex_colors.py` to block disallowed hex usage.

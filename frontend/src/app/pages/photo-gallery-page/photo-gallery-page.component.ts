@@ -1,5 +1,6 @@
 import { DOCUMENT, NgStyle } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { NgIconComponent } from '@ng-icons/core';
 import { Photo } from '../../models/photo.model';
 import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
@@ -7,7 +8,7 @@ import { PhotoApiService } from '../../services/photo-api.service';
 @Component({
   selector: 'app-photo-gallery-page',
   standalone: true,
-  imports: [NgStyle],
+  imports: [NgStyle, NgIconComponent],
   templateUrl: './photo-gallery-page.component.html',
   styleUrls: ['./photo-gallery-page.component.css']
 })

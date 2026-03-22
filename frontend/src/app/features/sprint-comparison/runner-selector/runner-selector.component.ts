@@ -68,6 +68,11 @@ export class RunnerSelectorComponent {
     this.dropdownOpen = false;
   }
 
+  onEnterKey(event: Event): void {
+    event.preventDefault();
+    this.addFromSearch();
+  }
+
   openDropdown(): void {
     this.dropdownOpen = true;
   }

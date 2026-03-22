@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  Benchmark,
   AvailableRunner,
   ComparisonSeries,
   SprintComparisonResponseApi
@@ -32,5 +33,16 @@ describe('sprint-comparison models', () => {
     };
 
     expect(response.series[0]?.person_name).toBe('Mina');
+  });
+
+  it('supports benchmark fixtures', () => {
+    const benchmark: Benchmark = {
+      id: 'cat',
+      label: 'Cat',
+      equivalent100mMs: 9300
+    };
+
+    expect(benchmark.label).toBe('Cat');
+    expect(benchmark.equivalent100mMs).toBe(9300);
   });
 });

@@ -1,11 +1,12 @@
 from datetime import date
 from typing import Any
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Query, Session
 
 from core.text import collapse_whitespace
 from models import Person, SprintEntry
+from schemas import TextFilterType
 from schemas import BestTimeRow, BestTimesResponse, SprintListResponse, SprintRow
 
 
@@ -16,7 +17,9 @@ def list_sprints(
     sort_by: str,
     sort_dir: str,
     name: str | None,
+    name_filter_type: TextFilterType,
     location: str | None,
+    location_filter_type: TextFilterType,
     date_from: date | None,
     date_to: date | None,
     min_time_ms: int | None,
@@ -26,7 +29,9 @@ def list_sprints(
     query = _apply_common_person_entry_filters(
         query=query,
         name=name,
+        name_filter_type=name_filter_type,
         location=location,
+        location_filter_type=location_filter_type,
         date_from=date_from,
         date_to=date_to,
         location_column=SprintEntry.location,
@@ -73,7 +78,9 @@ def list_best_times(
     sort_by: str,
     sort_dir: str,
     name: str | None,
+    name_filter_type: TextFilterType,
     location: str | None,
+    location_filter_type: TextFilterType,
     date_from: date | None,
     date_to: date | None,
 ) -> BestTimesResponse:
@@ -112,7 +119,9 @@ def list_best_times(
     query = _apply_common_person_entry_filters(
         query=query,
         name=name,
+        name_filter_type=name_filter_type,
         location=location,
+        location_filter_type=location_filter_type,
         date_from=date_from,
         date_to=date_to,
         location_column=ranked_entries.c.location,
@@ -160,20 +169,23 @@ def list_locations(db: Session) -> list[str]:
 def _apply_common_person_entry_filters(
     query: Query,
     name: str | None,
+    name_filter_type: TextFilterType,
     location: str | None,
+    location_filter_type: TextFilterType,
     date_from: date | None,
     date_to: date | None,
     location_column: Any,
     sprint_date_column: Any,
 ) -> Query:
     filters: list[Any] = []
-    normalized_name = _normalize_optional_text(name)
-    normalized_location = _normalize_optional_text(location)
+    name_filter = _build_text_filter(Person.name, name, name_filter_type)
+    if name_filter is not None:
+        filters.append(name_filter)
 
-    if normalized_name:
-        filters.append(Person.name.ilike(f"%{normalized_name}%"))
-    if normalized_location:
-        filters.append(location_column.ilike(f"%{normalized_location}%"))
+    location_filter = _build_text_filter(location_column, location, location_filter_type)
+    if location_filter is not None:
+        filters.append(location_filter)
+
     if date_from:
         filters.append(sprint_date_column >= date_from)
     if date_to:
@@ -210,3 +222,30 @@ def _normalize_optional_text(value: str | None) -> str | None:
         return None
     normalized = collapse_whitespace(value)
     return normalized or None
+
+
+def _build_text_filter(column: Any, value: str | None, filter_type: TextFilterType) -> Any | None:
+    blank_filter = or_(column.is_(None), func.length(func.btrim(column)) == 0)
+    if filter_type == "blank":
+        return blank_filter
+    if filter_type == "notBlank":
+        return and_(column.is_not(None), func.length(func.btrim(column)) > 0)
+
+    normalized_value = _normalize_optional_text(value)
+    if not normalized_value:
+        return None
+
+    if filter_type == "contains":
+        return column.ilike(f"%{normalized_value}%")
+    if filter_type == "notContains":
+        return ~column.ilike(f"%{normalized_value}%")
+    if filter_type == "equals":
+        return func.lower(column) == normalized_value.lower()
+    if filter_type == "notEqual":
+        return func.lower(column) != normalized_value.lower()
+    if filter_type == "startsWith":
+        return column.ilike(f"{normalized_value}%")
+    if filter_type == "endsWith":
+        return column.ilike(f"%{normalized_value}")
+
+    return None

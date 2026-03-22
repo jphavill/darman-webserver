@@ -1,6 +1,4 @@
 <section class="runner-selector">
-  <h3>Runner Selector</h3>
-
   <div class="runner-search-row">
     <div class="search-input-wrap">
       <input
@@ -8,8 +6,9 @@
         [ngModel]="searchTerm"
         (focus)="openDropdown()"
         (blur)="closeDropdown()"
+        (keydown.enter)="onEnterKey($event)"
         (ngModelChange)="onSearchTermChange($event)"
-        placeholder="Type runner name"
+        placeholder="Runner"
         aria-label="Search runners"
       />
 
@@ -23,13 +22,5 @@
         </li>
       </ul>
     </div>
-
-    <button
-      type="button"
-      [disabled]="!addCandidate || selectedPersonIds.length >= maxSelected"
-      (click)="addFromSearch()"
-    >
-      Add
-    </button>
   </div>
 </section>

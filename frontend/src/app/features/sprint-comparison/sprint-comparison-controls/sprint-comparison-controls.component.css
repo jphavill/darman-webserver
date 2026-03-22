@@ -1,113 +1,167 @@
 .controls-panel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.55rem 0.75rem;
+  --control-input-width: 112px;
+  --control-label-color: var(--accent-strong);
+  display: grid;
+  gap: 0.6rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.6rem;
-  padding: 0.65rem;
-  box-shadow: none;
+  padding: 0.6rem;
+}
+
+.control-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.45rem;
 }
 
 .control-field {
   display: grid;
-  gap: 0.22rem;
+  gap: 0.18rem;
+  min-width: var(--control-input-width);
 }
 
-.controls-panel span {
-  font-size: 0.75rem;
-  color: var(--accent-strong);
+.runner-field app-runner-selector {
+  display: block;
 }
 
-.controls-panel select {
-  width: 124px;
-  height: 30px;
-  border: 1px solid var(--border-strong);
+.control-field > span {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--control-label-color);
+  white-space: nowrap;
+}
+
+.control-field select {
+  border: 1px solid var(--border);
   background: var(--surface-soft);
-  color: #ffffff;
+  color: var(--text);
+  font-size: 0.82rem;
+  width: var(--control-input-width);
+  min-height: 34px;
   padding: 0.18rem 0.4rem;
-  border-radius: 0;
+  outline: 0;
   appearance: none;
 }
 
-.controls-panel select option {
+.control-field select option {
   background: var(--surface);
-  color: #ffffff;
+  color: var(--text);
 }
 
-.controls-panel small {
-  color: var(--text-soft);
-  font-size: 0.72rem;
-  max-width: 170px;
-  line-height: 1.2;
-}
-
-.runner-limit {
-  color: #f7b267;
-  font-size: 0.75rem;
-  margin-left: auto;
-}
-
-.selected-runners-block {
-  flex: 1 1 290px;
-  min-width: 250px;
-  display: grid;
-  gap: 0.3rem;
-}
-
-.selected-runners-header {
-  display: flex;
+.benchmarks-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.45rem;
-}
-
-.selected-runners-header h3 {
-  font-size: 0.8rem;
-  color: var(--accent-strong);
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.actions button {
+  justify-content: center;
+  min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
-  color: var(--text);
-  padding: 0.22rem 0.55rem;
-  font-size: 0.75rem;
+  color: var(--text-strong-soft);
+  font-size: 0.73rem;
+  padding: 0.34rem 0.7rem;
   cursor: pointer;
 }
 
-app-runner-selector,
-app-selected-runner-list {
-  flex: 1 1 290px;
-  min-width: 250px;
+.benchmarks-chip.is-active {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--text-inverse);
+}
+
+.reset-icon-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.reset-icon-button ng-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.utility-row {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.45rem;
+}
+
+.units-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.utility-row app-selected-runner-list {
+  min-width: 0;
+  border-left: 3px solid var(--border);
+  padding-left: 0.5rem;
+}
+
+.runner-limit {
+  justify-self: end;
+  color: var(--warning);
+  font-size: 0.73rem;
 }
 
 @media (max-width: 760px) {
-  .controls-panel {
-    align-items: stretch;
+  .control-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'mode location'
+      'runs runner';
+    gap: 0.4rem;
   }
 
-  .control-field,
-  .actions,
-  app-runner-selector,
-  app-selected-runner-list,
-  .selected-runners-block {
+  .mode-field {
+    grid-area: mode;
+  }
+
+  .location-field {
+    grid-area: location;
+  }
+
+  .runs-field {
+    grid-area: runs;
+  }
+
+  .runner-field {
+    grid-area: runner;
+  }
+
+  .benchmarks-chip {
+    justify-self: start;
+  }
+
+  .reset-icon-button {
+    justify-self: start;
+  }
+
+  .control-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .control-field select {
+    min-width: 0;
     width: 100%;
   }
 
-  .selected-runners-header {
-    flex-wrap: wrap;
+  .utility-row {
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.35rem;
   }
 
-  .controls-panel select {
-    width: 100%;
-  }
 }

@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-site-header',
   standalone: true,
+  imports: [NgIconComponent],
   templateUrl: './site-header.component.html',
   styleUrls: ['./site-header.component.css']
 })

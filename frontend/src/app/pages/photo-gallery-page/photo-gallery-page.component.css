@@ -16,7 +16,7 @@
 
 .error-message {
   margin-bottom: 0.9rem;
-  color: #ffbab0;
+  color: var(--error);
 }
 
 .photo-masonry {
@@ -130,7 +130,7 @@
   background: var(--surface-raised);
 }
 
-.fullscreen-btn svg {
+.fullscreen-btn ng-icon {
   width: 1rem;
   height: 1rem;
 }
@@ -147,6 +147,14 @@
   width: 2rem;
   height: 2rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn ng-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 @media (max-width: 1000px) {

@@ -31,6 +31,11 @@ h1 {
   color: var(--accent-strong);
 }
 
+.github-link ng-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 @media (max-width: 600px) {
   h1 {
     font-size: 2rem;

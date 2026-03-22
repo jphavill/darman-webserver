@@ -96,9 +96,26 @@ describe('SprintComparisonPageComponent', () => {
     const component = TestBed.runInInjectionContext(() => new SprintComparisonPageComponent());
     component.onAddRunner({ id: 2, name: 'Bob' });
 
-    component.onRunnerColorChange({ personId: 2, color: '#123456' });
+    component.onRunnerColorChange({ personId: 2, color: 'var(--accent)' });
 
-    expect(component.state().selectedRunners[0]?.color).toBe('#123456');
-    expect(localStorage.getItem('sprintComparisonRunnerColors')).toContain('"2":"#123456"');
+    expect(component.state().selectedRunners[0]?.color).toBe('var(--accent)');
+    expect(localStorage.getItem('sprintComparisonRunnerColors')).toContain('"2":"var(--accent)"');
+  });
+
+  it('updates benchmark toggle and persists preferences', () => {
+    const apiMock = createApiMock();
+    apiMock.getPeople.mockReturnValue(of([]));
+    apiMock.getLocations.mockReturnValue(of([]));
+    apiMock.getComparison.mockReturnValue(of([]));
+
+    TestBed.configureTestingModule({
+      providers: [SprintComparisonStore, { provide: SprintComparisonService, useValue: apiMock }]
+    });
+    const component = TestBed.runInInjectionContext(() => new SprintComparisonPageComponent());
+
+    component.onShowBenchmarksChange(true);
+
+    expect(component.state().showBenchmarks).toBe(true);
+    expect(localStorage.getItem('sprintComparisonPreferences')).toContain('"showBenchmarks":true');
   });
 });

@@ -14,7 +14,7 @@
         <div class="expanded-hero-overlay"></div>
         <h3>{{ activeProject.title }}</h3>
         <button type="button" class="close-btn" (click)="requestClose()" aria-label="Close project details">
-          <span aria-hidden="true">×</span>
+          <ng-icon name="close" aria-hidden="true"></ng-icon>
         </button>
       </div>
 
@@ -27,13 +27,13 @@
           <a [href]="link.url" target="_blank" rel="noreferrer" class="link-button">
             @switch (link.type) {
               @case ('github') {
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.1.82-.26.82-.58v-2.03c-3.34.73-4.04-1.42-4.04-1.42a3.17 3.17 0 0 0-1.33-1.75c-1.09-.75.08-.73.08-.73a2.5 2.5 0 0 1 1.83 1.23 2.53 2.53 0 0 0 3.46.99 2.53 2.53 0 0 1 .75-1.6c-2.66-.3-5.45-1.33-5.45-5.92a4.64 4.64 0 0 1 1.24-3.23 4.3 4.3 0 0 1 .12-3.19s1-.32 3.3 1.23a11.39 11.39 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23a4.3 4.3 0 0 1 .12 3.19 4.63 4.63 0 0 1 1.24 3.23c0 4.6-2.8 5.62-5.47 5.91a2.84 2.84 0 0 1 .82 2.2v3.26c0 .32.22.69.82.58A12 12 0 0 0 12 .5Z"/></svg>
+                <ng-icon name="github" aria-hidden="true"></ng-icon>
               }
               @case ('cults3d') {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 2.5h9.6A4.7 4.7 0 0 1 21.5 7v10a4.7 4.7 0 0 1-4.7 4.5H7.2A4.7 4.7 0 0 1 2.5 17V7a4.7 4.7 0 0 1 4.7-4.5Zm0 2.4A2.3 2.3 0 0 0 4.9 7v10a2.3 2.3 0 0 0 2.3 2.1h9.6a2.3 2.3 0 0 0 2.3-2.1V7a2.3 2.3 0 0 0-2.3-2.1H7.2Zm4.8 2.7a4.4 4.4 0 1 1 0 8.8 4.4 4.4 0 0 1 0-8.8Zm0 2.4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>
               }
               @default {
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a2 2 0 1 1 2.8 2.8l-1.2 1.2a1 1 0 1 0 1.4 1.4l1.2-1.2a4 4 0 0 0-5.6-5.6l-3.4 3.4a3 3 0 1 0 4.2 4.2l1.2-1.2a1 1 0 0 0-1.4-1.4l-1.2 1.2a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0 1 1 0 0 0-1.4-1.4ZM6 17.9a4 4 0 0 1 0-5.7l1.2-1.2a1 1 0 0 1 1.4 1.4L7.4 13.6a2 2 0 1 0 2.8 2.8l3.4-3.4a1 1 0 1 1 1.4 1.4l-3.4 3.4A4 4 0 0 1 6 17.9Z"/></svg>
+                <ng-icon name="link" aria-hidden="true"></ng-icon>
               }
             }
             <span>{{ link.label }}</span>

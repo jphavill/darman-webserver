@@ -407,6 +407,46 @@ def test_list_sprints_supports_filter_order_and_pagination(client, monkeypatch):
     assert body["rows"][0]["sprint_time_ms"] == 9900
 
 
+def test_list_sprints_supports_text_filter_types(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    payloads = [
+        {"name": "Alex", "sprint_time_ms": 10500, "sprint_date": "2026-03-01", "location": "Track A"},
+        {"name": "Alexa", "sprint_time_ms": 9900, "sprint_date": "2026-03-03", "location": "Track B"},
+        {"name": "Blake", "sprint_time_ms": 10100, "sprint_date": "2026-03-02", "location": "Track A"},
+    ]
+    for payload in payloads:
+        response = _insert(client, "secret", payload)
+        assert response.status_code == 200
+
+    equals_response = client.get(
+        "/v1/sprints",
+        params={
+            "name": "Alex",
+            "name_filter_type": "equals",
+            "sort_by": "name",
+            "sort_dir": "asc",
+        },
+    )
+    assert equals_response.status_code == 200
+    equals_body = equals_response.json()
+    assert equals_body["total"] == 1
+    assert equals_body["rows"][0]["name"] == "Alex"
+
+    not_contains_response = client.get(
+        "/v1/sprints",
+        params={
+            "name": "lex",
+            "name_filter_type": "notContains",
+            "sort_by": "name",
+            "sort_dir": "asc",
+        },
+    )
+    assert not_contains_response.status_code == 200
+    not_contains_body = not_contains_response.json()
+    assert not_contains_body["total"] == 1
+    assert not_contains_body["rows"][0]["name"] == "Blake"
+
+
 def test_delete_sprint_requires_auth(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     created = _insert(

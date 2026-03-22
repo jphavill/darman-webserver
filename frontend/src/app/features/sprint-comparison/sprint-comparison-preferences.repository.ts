@@ -6,6 +6,7 @@ export interface PersistedPreferences {
   mode: ComparisonMode;
   runWindow: RunWindow;
   location: string | null;
+  showBenchmarks: boolean;
   selectedRunners: Array<{ personId: number; visible: boolean }>;
 }
 
@@ -57,6 +58,7 @@ export class SprintComparisonPreferencesRepository {
         mode: parsed.mode,
         runWindow: parsed.runWindow,
         location: parsed.location ?? null,
+        showBenchmarks: parsed.showBenchmarks === true,
         selectedRunners: parsed.selectedRunners
           .map((runner) => ({
             personId: Number(runner.personId),

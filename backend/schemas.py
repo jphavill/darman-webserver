@@ -56,6 +56,16 @@ class SprintListResponse(BaseModel):
 SortDirection = Literal["asc", "desc"]
 SprintSortBy = Literal["name", "sprint_time_ms", "sprint_date", "location", "created_at"]
 BestSortBy = Literal["name", "best_time_ms", "sprint_date", "location", "updated_at"]
+TextFilterType = Literal[
+    "contains",
+    "notContains",
+    "equals",
+    "notEqual",
+    "startsWith",
+    "endsWith",
+    "blank",
+    "notBlank",
+]
 
 
 class SprintListQuery(BaseModel):
@@ -64,7 +74,9 @@ class SprintListQuery(BaseModel):
     sort_by: SprintSortBy = "sprint_date"
     sort_dir: SortDirection = "desc"
     name: str | None = None
+    name_filter_type: TextFilterType = "contains"
     location: str | None = None
+    location_filter_type: TextFilterType = "contains"
     date_from: date | None = None
     date_to: date | None = None
     min_time_ms: int | None = Field(default=None, gt=0)
@@ -77,7 +89,9 @@ class BestTimesQuery(BaseModel):
     sort_by: BestSortBy = "best_time_ms"
     sort_dir: SortDirection = "asc"
     name: str | None = None
+    name_filter_type: TextFilterType = "contains"
     location: str | None = None
+    location_filter_type: TextFilterType = "contains"
     date_from: date | None = None
     date_to: date | None = None
 

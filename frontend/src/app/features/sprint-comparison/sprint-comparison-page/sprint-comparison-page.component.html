@@ -7,6 +7,7 @@
     [mode]="state().mode"
     [runWindow]="state().runWindow"
     [location]="state().location"
+    [showBenchmarks]="state().showBenchmarks"
     [runnerSearch]="state().runnerSearch"
     [availableRunners]="state().availableRunners"
     [availableLocations]="state().availableLocations"
@@ -16,6 +17,7 @@
     (locationChange)="onLocationChange($event)"
     (runWindowChange)="onRunWindowChange($event)"
     (runnerSearchChange)="onRunnerSearchChange($event)"
+    (showBenchmarksChange)="onShowBenchmarksChange($event)"
     (addRunner)="onAddRunner($event)"
     (removeRunner)="onRemoveRunner($event)"
     (runnerColorChange)="onRunnerColorChange($event)"
@@ -27,7 +29,9 @@
   <app-sprint-comparison-chart
     [mode]="state().mode"
     [series]="state().series"
+    [displayUnit]="displayUnit()"
     [selectedRunners]="state().selectedRunners"
+    [showBenchmarks]="state().showBenchmarks"
     [loading]="state().loading"
     [error]="state().error"
   ></app-sprint-comparison-chart>

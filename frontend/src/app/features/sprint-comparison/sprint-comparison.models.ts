@@ -25,10 +25,17 @@ export interface ComparisonSeries {
   points: ComparisonPoint[];
 }
 
+export interface Benchmark {
+  id: string;
+  label: string;
+  equivalent100mMs: number;
+}
+
 export interface SprintComparisonState {
   mode: ComparisonMode;
   runWindow: RunWindow;
   location: string | null;
+  showBenchmarks: boolean;
   runnerSearch: string;
   availableRunners: AvailableRunner[];
   availableLocations: string[];

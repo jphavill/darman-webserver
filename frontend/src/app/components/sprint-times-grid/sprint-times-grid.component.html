@@ -1,4 +1,45 @@
 <div class="grid-shell">
+  <div class="grid-toolbar">
+    <div class="view-toggle" role="group" aria-label="Sprint table view">
+      <button
+        class="icon-button"
+        type="button"
+        [class.active]="view === 'leaderboard'"
+        (click)="setView('leaderboard')"
+        aria-label="Leaderboard view"
+        title="Leaderboard view"
+      >
+        <ng-icon name="viewLeaderboard" aria-hidden="true"></ng-icon>
+      </button>
+
+      <button
+        class="icon-button"
+        type="button"
+        [class.active]="view === 'advanced'"
+        (click)="setView('advanced')"
+        aria-label="Advanced table view"
+        title="Advanced table view"
+      >
+        <ng-icon name="viewAdvanced" aria-hidden="true"></ng-icon>
+      </button>
+    </div>
+
+    <div class="unit-picker">
+      <app-sprint-unit-toggle></app-sprint-unit-toggle>
+    </div>
+
+    @if (view === 'leaderboard') {
+      <div class="range-picker">
+        <ng-icon name="calendar" aria-hidden="true"></ng-icon>
+        <select [value]="leaderboardRange" (change)="onLeaderboardRangeChange($event)" aria-label="Leaderboard range">
+          @for (option of rangeOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
   <button
     class="reset-columns-button"
     type="button"
@@ -6,15 +47,13 @@
     aria-label="Reset table column widths"
     title="Reset column widths"
   >
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M4 12l3-3v2h10V9l3 3-3 3v-2H7v2z" />
-    </svg>
+    <ng-icon name="resetColumns" aria-hidden="true"></ng-icon>
   </button>
 
   <ag-grid-angular
     class="ag-theme-quartz sprint-grid"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
+    [columnDefs]="activeColumnDefs"
+    [defaultColDef]="activeDefaultColDef"
     rowModelType="infinite"
     [cacheBlockSize]="pageSize"
     [pagination]="true"

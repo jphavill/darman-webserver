@@ -1,5 +1,6 @@
 :root {
   --bg-canvas: #121417;
+  --bg-overlay-strong: rgba(16, 22, 30, 0.88);
   --surface: #1a1e23;
   --surface-soft: #232830;
   --surface-raised: #2b313a;
@@ -7,13 +8,34 @@
 
   --text: #e8edf3;
   --text-soft: #b5beca;
+  --text-strong-soft: #c6d0dc;
+  --text-inverse: #ffffff;
 
   --accent: #8fb8e8;
   --accent-strong: #b8d5f2;
   --accent-soft: #2f3f54;
 
+  --success: #2e8f67;
+  --warning: #f7b267;
+  --error: #ffbab0;
+
   --border: #353c46;
   --border-strong: #4a5664;
+
+  --chart-grid-line: #2d3440;
+  --chart-benchmark-line: #7b8797;
+
+  --runner-palette-1: #58a6ff;
+  --runner-palette-2: #e05654;
+  --runner-palette-3: #4ac07a;
+  --runner-palette-4: #f5a63d;
+  --runner-palette-5: #8ecaf0;
+  --runner-palette-6: #f27f98;
+
+  --grid-bg: #171d25;
+  --grid-header-bg: #202a36;
+  --grid-input-bg: #121820;
+  --grid-panel-bg: #1c2530;
 
   --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.26);
   --shadow-medium: 0 16px 34px rgba(0, 0, 0, 0.34);

@@ -133,6 +133,7 @@ alembic -c backend/alembic.ini revision --autogenerate -m "describe change"
 - Existing components are standalone (`standalone: true`); follow this pattern.
 - Naming: PascalCase class names, kebab-case filenames.
 - Vitest tests should be concise and behavior-focused.
+- Keep all frontend hex color values in `frontend/src/theme.css`; In `.css` files, use `var(--token-name)`. In `.ts` files resolve tokens through `src/app/shared/theme/theme-tokens.ts`.
 
 ## Test Expectations
 - When behavior changes, update tests in the same area.

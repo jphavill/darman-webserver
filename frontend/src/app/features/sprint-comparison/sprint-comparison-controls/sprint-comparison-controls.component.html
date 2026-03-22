@@ -1,42 +1,56 @@
 <aside class="controls-panel">
-  <label class="control-field">
-    <span>Chart Mode</span>
-    <select [ngModel]="mode" (ngModelChange)="modeChange.emit($event)">
-      <option *ngFor="let option of modeOptions" [ngValue]="option.value">{{ option.label }}</option>
-    </select>
-  </label>
+  <div class="control-rail">
+    <label class="control-field mode-field">
+      <span>Mode</span>
+      <select [ngModel]="mode" (ngModelChange)="modeChange.emit($event)">
+        <option *ngFor="let option of modeOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
 
-  <label class="control-field">
-    <span>Location</span>
-    <select [ngModel]="location" (ngModelChange)="locationChange.emit($event)">
-      <option [ngValue]="null">All locations</option>
-      <option *ngFor="let item of availableLocations" [ngValue]="item">{{ item }}</option>
-    </select>
-  </label>
+    <label class="control-field location-field">
+      <span>Location</span>
+      <select [ngModel]="location" (ngModelChange)="locationChange.emit($event)">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of availableLocations" [ngValue]="item">{{ item }}</option>
+      </select>
+    </label>
 
-  <label class="control-field" *ngIf="mode === 'progression'">
-    <span># Runs</span>
-    <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
-      <option *ngFor="let option of runWindowOptions" [ngValue]="option.value">{{ option.label }}</option>
-    </select>
-  </label>
+    <label class="control-field runs-field" *ngIf="mode === 'progression'">
+      <span>Runs</span>
+      <select [ngModel]="runWindow" (ngModelChange)="runWindowChange.emit($event)">
+        <option *ngFor="let option of runWindowOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
 
-  <app-runner-selector
-    [runners]="availableRunners"
-    [selectedPersonIds]="selectedPersonIds"
-    [searchTerm]="runnerSearch"
-    [maxSelected]="maxRunners"
-    (searchTermChange)="runnerSearchChange.emit($event)"
-    (addRunner)="addRunner.emit($event)"
-  ></app-runner-selector>
+    <div class="control-field runner-field">
+      <span>Runner</span>
+      <app-runner-selector
+        [runners]="availableRunners"
+        [selectedPersonIds]="selectedPersonIds"
+        [searchTerm]="runnerSearch"
+        [maxSelected]="maxRunners"
+        (searchTermChange)="runnerSearchChange.emit($event)"
+        (addRunner)="addRunner.emit($event)"
+      ></app-runner-selector>
+    </div>
+  </div>
 
-  <section class="selected-runners-block">
-    <div class="selected-runners-header">
-      <h3>Selected Runners</h3>
-      <div class="actions">
-        <button type="button" (click)="clearSelections.emit()">Clear runners</button>
-        <button type="button" (click)="resetFilters.emit()">Reset filters</button>
-      </div>
+  <div class="utility-row">
+    <button type="button" class="reset-icon-button" aria-label="Reset filters" (click)="resetFilters.emit()">
+      <ng-icon name="reset" aria-hidden="true"></ng-icon>
+    </button>
+    <button
+      type="button"
+      class="benchmarks-chip"
+      [class.is-active]="showBenchmarks"
+      [attr.aria-pressed]="showBenchmarks"
+      (click)="toggleBenchmarks()"
+    >
+      Benchmarks
+    </button>
+
+    <div class="units-chip">
+      <app-sprint-unit-toggle></app-sprint-unit-toggle>
     </div>
 
     <app-selected-runner-list
@@ -45,7 +59,7 @@
       (colorChange)="runnerColorChange.emit($event)"
       (visibilityChange)="runnerVisibilityChange.emit($event)"
     ></app-selected-runner-list>
-  </section>
+  </div>
 
   <p class="runner-limit" *ngIf="isMaxSelected">Compare up to 4 runners at once.</p>
 </aside>

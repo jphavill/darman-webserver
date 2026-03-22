@@ -2,18 +2,115 @@
   position: relative;
 }
 
+.grid-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.icon-button {
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(23, 31, 42, 0.78);
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, color 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.icon-button ng-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.icon-button.active {
+  color: var(--accent-strong);
+  border-color: var(--accent-soft);
+  background: rgba(143, 184, 232, 0.15);
+}
+
+.range-picker {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.unit-picker {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.unit-picker + .range-picker {
+  margin-left: 0;
+}
+
+.range-picker ng-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-soft);
+  opacity: 0.95;
+}
+
+.range-picker select {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.82rem;
+  width: 70px;
+  min-height: 34px;
+  padding: 0.18rem 0.4rem;
+  outline: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+.range-picker select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.range-picker select:focus-visible,
+.icon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.leaderboard-name-cell {
+  display: inline-flex;
+  align-items: center;
+}
+
 .sprint-grid {
   width: 100%;
   height: clamp(480px, 68dvh, 620px);
   border-radius: 12px;
   overflow: hidden;
-  margin-top: 1rem;
+  margin-top: 0.7rem;
   box-shadow: var(--shadow-soft);
 }
 
 .reset-columns-button {
   position: absolute;
-  top: 0.75rem;
+  top: 3.5rem;
   right: 0.75rem;
   width: 2rem;
   height: 2rem;
@@ -30,10 +127,9 @@
   transition: transform 0.16s ease, background-color 0.16s ease, color 0.16s ease;
 }
 
-.reset-columns-button svg {
+.reset-columns-button ng-icon {
   width: 1.5rem;
   height: 1.5rem;
-  fill: currentColor;
 }
 
 .reset-columns-button:hover {
@@ -51,12 +147,12 @@
   --ag-font-family: var(--font-body);
   --ag-font-size: 0.95rem;
 
-  --ag-background-color: #171d25;
+  --ag-background-color: var(--grid-bg);
   --ag-foreground-color: var(--text);
   --ag-border-color: var(--border);
   --ag-secondary-border-color: rgba(255, 255, 255, 0.07);
 
-  --ag-header-background-color: #202a36;
+  --ag-header-background-color: var(--grid-header-bg);
   --ag-header-foreground-color: var(--accent-strong);
   --ag-header-column-separator-color: rgba(255, 255, 255, 0.1);
 
@@ -64,7 +160,7 @@
   --ag-row-hover-color: rgba(143, 184, 232, 0.16);
   --ag-selected-row-background-color: rgba(143, 184, 232, 0.22);
 
-  --ag-input-background-color: #121820;
+  --ag-input-background-color: var(--grid-input-bg);
   --ag-input-border-color: var(--border-strong);
   --ag-input-focus-border-color: var(--accent);
   --ag-input-text-color: var(--text);
@@ -72,8 +168,8 @@
   --ag-icon-color: var(--text-soft);
   --ag-icon-font-color: var(--text-soft);
 
-  --ag-control-panel-background-color: #1c2530;
-  --ag-subheader-background-color: #1c2530;
+  --ag-control-panel-background-color: var(--grid-panel-bg);
+  --ag-subheader-background-color: var(--grid-panel-bg);
   --ag-modal-overlay-background-color: rgba(7, 10, 14, 0.64);
 
   --ag-range-selection-background-color: rgba(143, 184, 232, 0.16);
@@ -104,16 +200,28 @@
 
 .error-message {
   margin-top: 0.9rem;
-  color: #ffbab0;
+  color: var(--error);
 }
 
 @media (max-width: 700px) {
+  .grid-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    row-gap: 0;
+  }
+
+  .view-toggle,
+  .unit-picker,
+  .range-picker {
+    flex: 0 0 auto;
+  }
+
   .sprint-grid {
     height: clamp(360px, calc(100dvh - 240px), 560px);
   }
 
   .reset-columns-button {
-    top: 0.5rem;
+    top: 3.15rem;
     right: 0.5rem;
     width: 1.9rem;
     height: 1.9rem;

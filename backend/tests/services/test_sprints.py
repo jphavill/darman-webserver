@@ -109,7 +109,9 @@ def test_list_sprints_filters_and_orders(db_session):
         sort_by="sprint_time_ms",
         sort_dir="asc",
         name="Avery",
+        name_filter_type="contains",
         location="North",
+        location_filter_type="contains",
         date_from=None,
         date_to=None,
         min_time_ms=9600,
@@ -138,7 +140,9 @@ def test_list_best_times_uses_aggregate_when_multiple_entries_exist(db_session):
         sort_by="best_time_ms",
         sort_dir="asc",
         name="Taylor",
+        name_filter_type="contains",
         location=None,
+        location_filter_type="contains",
         date_from=None,
         date_to=None,
     )
@@ -163,7 +167,9 @@ def test_existing_sprint_history_resolves_display_name(db_session):
         sort_by="created_at",
         sort_dir="asc",
         name=None,
+        name_filter_type="contains",
         location=None,
+        location_filter_type="contains",
         date_from=None,
         date_to=None,
         min_time_ms=None,
@@ -172,6 +178,57 @@ def test_existing_sprint_history_resolves_display_name(db_session):
 
     assert result.total == 2
     assert {row.name for row in result.rows} == {"Chris Doe"}
+
+
+def test_list_sprints_honors_text_filter_types(db_session):
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alex", sprint_time_ms=10000, sprint_date=date(2026, 3, 1), location="North"),
+    )
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Alexa", sprint_time_ms=10100, sprint_date=date(2026, 3, 2), location="North"),
+    )
+    create_sprint_entry(
+        db_session,
+        SprintCreateRequest(name="Blake", sprint_time_ms=9900, sprint_date=date(2026, 3, 3), location="South"),
+    )
+
+    equals_result = list_sprints(
+        db=db_session,
+        limit=10,
+        offset=0,
+        sort_by="name",
+        sort_dir="asc",
+        name="Alex",
+        name_filter_type="equals",
+        location=None,
+        location_filter_type="contains",
+        date_from=None,
+        date_to=None,
+        min_time_ms=None,
+        max_time_ms=None,
+    )
+    assert equals_result.total == 1
+    assert equals_result.rows[0].name == "Alex"
+
+    not_contains_result = list_sprints(
+        db=db_session,
+        limit=10,
+        offset=0,
+        sort_by="name",
+        sort_dir="asc",
+        name="lex",
+        name_filter_type="notContains",
+        location=None,
+        location_filter_type="contains",
+        date_from=None,
+        date_to=None,
+        min_time_ms=None,
+        max_time_ms=None,
+    )
+    assert not_contains_result.total == 1
+    assert not_contains_result.rows[0].name == "Blake"
 
 
 def test_update_sprint_entry_reassigns_to_existing_person_name(db_session):

@@ -27,6 +27,7 @@ export class SprintComparisonStore {
     mode: 'progression',
     runWindow: 'all',
     location: null,
+    showBenchmarks: false,
     runnerSearch: '',
     availableRunners: [],
     availableLocations: [],
@@ -86,6 +87,11 @@ export class SprintComparisonStore {
 
   onRunnerSearchChange(search: string): void {
     this.patchState({ runnerSearch: search });
+  }
+
+  onShowBenchmarksChange(showBenchmarks: boolean): void {
+    this.patchState({ showBenchmarks });
+    this.persistPreferences();
   }
 
   onAddRunner(runner: AvailableRunner): void {
@@ -208,6 +214,7 @@ export class SprintComparisonStore {
       mode: preferences.mode,
       runWindow: preferences.runWindow,
       location: preferences.location,
+      showBenchmarks: preferences.showBenchmarks,
       selectedRunners
     });
   }
@@ -222,6 +229,7 @@ export class SprintComparisonStore {
       mode: state.mode,
       runWindow: state.runWindow,
       location: state.location,
+      showBenchmarks: state.showBenchmarks,
       selectedRunners: state.selectedRunners.map((runner) => ({
         personId: runner.personId,
         visible: runner.visible

@@ -1,0 +1,14 @@
+<div class="unit-toggle" role="group" aria-label="Sprint units">
+  @for (option of options; track option.value) {
+    <button
+      type="button"
+      class="unit-button"
+      [class.is-active]="activeUnit === option.value"
+      [attr.aria-label]="option.ariaLabel"
+      [attr.aria-pressed]="activeUnit === option.value"
+      (click)="setUnit(option.value)"
+    >
+      {{ option.shortLabel }}
+    </button>
+  }
+</div>

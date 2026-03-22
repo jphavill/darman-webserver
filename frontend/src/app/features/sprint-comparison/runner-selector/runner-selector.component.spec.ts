@@ -47,4 +47,18 @@ describe('RunnerSelectorComponent', () => {
 
     expect(addSpy).not.toHaveBeenCalled();
   });
+
+  it('adds candidate when pressing Enter', () => {
+    const component = createComponent();
+    component.runners = [{ id: 1, name: 'Alice' }];
+    component.searchTerm = 'alice';
+
+    const addSpy = vi.spyOn(component.addRunner, 'emit');
+    const event = { preventDefault: vi.fn() } as unknown as KeyboardEvent;
+
+    component.onEnterKey(event);
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(addSpy).toHaveBeenCalledWith({ id: 1, name: 'Alice' });
+  });
 });
