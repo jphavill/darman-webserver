@@ -1,0 +1,38 @@
+<section class="comparison-header">
+  <h1>Charts</h1>
+</section>
+
+<section class="comparison-layout">
+  <app-charts-controls
+    [mode]="state().mode"
+    [runWindow]="state().runWindow"
+    [location]="state().location"
+    [showBenchmarks]="state().showBenchmarks"
+    [runnerSearch]="state().runnerSearch"
+    [availableRunners]="state().availableRunners"
+    [availableLocations]="state().availableLocations"
+    [selectedRunners]="state().selectedRunners"
+    (modeChange)="onModeChange($event)"
+    (locationChange)="onLocationChange($event)"
+    (runWindowChange)="onRunWindowChange($event)"
+    (runnerSearchChange)="onRunnerSearchChange($event)"
+    (showBenchmarksChange)="onShowBenchmarksChange($event)"
+    (addRunner)="onAddRunner($event)"
+    (removeRunner)="onRemoveRunner($event)"
+    (runnerColorChange)="onRunnerColorChange($event)"
+    (runnerVisibilityChange)="onRunnerVisibilityChange($event)"
+    (clearSelections)="onClearSelections()"
+    (resetFilters)="onResetFilters()"
+  ></app-charts-controls>
+
+  <app-charts-chart
+    [mode]="state().mode"
+    [runWindow]="state().runWindow"
+    [series]="state().series"
+    [displayUnit]="displayUnit()"
+    [selectedRunners]="state().selectedRunners"
+    [showBenchmarks]="state().showBenchmarks"
+    [loading]="state().loading"
+    [error]="state().error"
+  ></app-charts-chart>
+</section>

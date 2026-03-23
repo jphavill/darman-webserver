@@ -1,20 +1,20 @@
 import { Routes } from '@angular/router';
 import { HomePageComponent } from './app/pages/home-page/home-page.component';
-import { PhotoGalleryPageComponent } from './app/pages/photo-gallery-page/photo-gallery-page.component';
+import { PhotosPageComponent } from './app/pages/photos-page/photos-page.component';
 
 export const routes: Routes = [
   { path: '', component: HomePageComponent },
   {
-    path: 'sprint',
-    loadComponent: () => import('./app/pages/sprint-page/sprint-page.component').then((mod) => mod.SprintPageComponent)
+    path: 'leaderboard',
+    loadComponent: () => import('./app/pages/leaderboard-page/leaderboard-page.component').then((mod) => mod.LeaderboardPageComponent)
   },
   {
-    path: 'results/comparison',
+    path: 'charts',
     loadComponent: () =>
-      import('./app/features/sprint-comparison/sprint-comparison-page/sprint-comparison-page.component').then(
-        (mod) => mod.SprintComparisonPageComponent
+      import('./app/features/charts/charts-page/charts-page.component').then(
+        (mod) => mod.ChartsPageComponent
       )
   },
-  { path: 'photogallery', component: PhotoGalleryPageComponent },
+  { path: 'photos', component: PhotosPageComponent },
   { path: '**', redirectTo: '' }
 ];
