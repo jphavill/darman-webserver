@@ -10,8 +10,11 @@ from models import Photo
 from schemas import PhotoBatchUpsertRequest, PhotoListResponse, PhotoRow, PhotoUpdateRequest
 
 
-def list_photos(db: Session, limit: int, offset: int) -> PhotoListResponse:
-    query = db.query(Photo).filter(Photo.is_published.is_(True))
+def list_photos(db: Session, limit: int, offset: int, include_unpublished: bool = False) -> PhotoListResponse:
+    query = db.query(Photo)
+    if not include_unpublished:
+        query = query.filter(Photo.is_published.is_(True))
+
     query = query.order_by(Photo.captured_at.desc(), Photo.created_at.desc(), Photo.id.asc())
 
     total = query.count()

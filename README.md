@@ -17,7 +17,8 @@ A Docker-based webserver stack with Angular frontend, Python backend, PostgreSQL
 
 2. Edit `.env` with your desired values:
    - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` - PostgreSQL credentials/database name
-   - `ADMIN_API_TOKEN` - Bearer token required for sprint data inserts (`POST /api/v1/sprints`)
+   - `ADMIN_API_TOKEN` - Admin login bootstrap token for creating admin sessions
+   - `ADMIN_SESSION_COOKIE_SECURE` - Set to `true` in non-local environments (default is secure)
    - `CLOUDFLARE_TUNNEL_TOKEN` - Required for production only (Cloudflare Zero Trust tunnel token)
 
 3. Create a local media folder for images:
@@ -147,6 +148,9 @@ This starts:
 - Backend (Python/FastAPI, with `--reload` in local mode)
 - PostgreSQL database
 - Caddy reverse proxy (ports 80/443)
+
+Local Docker mode explicitly sets `ADMIN_SESSION_COOKIE_SECURE=false` so admin session cookies work over `http://localhost`.
+All other environments default to `ADMIN_SESSION_COOKIE_SECURE=true` unless explicitly overridden.
 
 The Cloudflare Tunnel token is **not required** in local mode.
 

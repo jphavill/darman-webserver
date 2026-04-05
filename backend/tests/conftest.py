@@ -109,7 +109,7 @@ def db_session() -> Generator:
 
     session.execute(
         text(
-            "TRUNCATE TABLE photos, sprint_entries, people RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE admin_sessions, photos, sprint_entries, people RESTART IDENTITY CASCADE"
         )
     )
     session.commit()

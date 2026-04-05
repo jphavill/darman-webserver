@@ -26,7 +26,7 @@ This folder contains scripts for preparing gallery images and syncing metadata t
   - If `--manifest-out` already exists, rows are merged by `id` (new IDs append, existing IDs update in place).
 
 - `upsert-gallery-manifest.sh`
-  - Sends the generated manifest to `POST /api/v1/photos/batch-upsert`.
+  - Logs in with `ADMIN_API_TOKEN`, sends the manifest to `POST /api/v1/photos/batch-upsert` with cookie + CSRF auth, then logs out.
 
 ## Prerequisites
 
@@ -127,7 +127,10 @@ scp media/gallery/* jh://home/jphavill/dockerStuff/darman-webserver/media/galler
   - Check `filename` values in CSV and input directory path.
 
 - API returns `401` on upsert
-  - Verify `ADMIN_API_TOKEN` value and `Authorization: Bearer` usage.
+  - Verify `ADMIN_API_TOKEN` and that `POST /api/v1/system/admin/session` succeeds for your `api-base-url`.
+
+- API returns `403` on upsert
+  - The session cookie or CSRF token was not accepted. Re-run `upsert-gallery-manifest.sh` to establish a fresh admin session.
 
 - API returns `422` on upsert
   - Validate UUID format, required text fields, and URL fields in manifest rows.

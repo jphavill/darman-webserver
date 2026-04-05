@@ -1,7 +1,15 @@
+def _auth_headers(client, token: str) -> dict[str, str]:
+    login = client.post("/v1/system/admin/session", json={"api_key": token})
+    assert login.status_code == 200
+    csrf = login.cookies.get("XSRF-TOKEN")
+    assert csrf
+    return {"X-XSRF-TOKEN": csrf}
+
+
 def _insert_sprint(client, token: str, payload: dict):
     return client.post(
         "/v1/sprints",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
         json=payload,
     )
 
@@ -9,14 +17,14 @@ def _insert_sprint(client, token: str, payload: dict):
 def _delete_person(client, token: str, person_id: int):
     return client.delete(
         f"/v1/people/{person_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
     )
 
 
 def _create_person(client, token: str, payload: dict):
     return client.post(
         "/v1/people",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
         json=payload,
     )
 
@@ -131,6 +139,7 @@ def test_delete_person_requires_auth(client, monkeypatch):
         {"name": "Alex", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "Track A"},
     )
     person_id = client.get("/v1/people", params={"q": "alex"}).json()[0]["id"]
+    client.cookies.clear()
 
     response = client.delete(f"/v1/people/{person_id}")
     assert response.status_code == 401

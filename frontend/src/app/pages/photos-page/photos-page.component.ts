@@ -1,6 +1,7 @@
 import { NgStyle } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, inject, DOCUMENT } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, effect, inject, signal, DOCUMENT } from '@angular/core';
 import { NgIconComponent } from '@ng-icons/core';
+import { AdminAuthStateService } from '../../core/admin/admin-auth-state.service';
 import { Photo } from '../../models/photo.model';
 import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
@@ -11,30 +12,41 @@ import { PhotoApiService } from '../../services/photo-api.service';
     templateUrl: './photos-page.component.html',
     styleUrls: ['./photos-page.component.css']
 })
-export class PhotosPageComponent implements OnInit, OnDestroy {
+export class PhotosPageComponent implements OnDestroy {
   private readonly photoApi = inject(PhotoApiService);
+  private readonly adminAuthState = inject(AdminAuthStateService);
   private readonly window = inject(WINDOW);
   private readonly document = inject(DOCUMENT);
   private readonly masonryRowHeight = 8;
   private readonly masonryGap = 16;
   private readonly fallbackAspectRatio = 4 / 3;
   private readonly thumbAspectRatios = new Map<string, number>();
+  private readonly pendingPhotoUpdates = signal<Set<string>>(new Set());
+
+  readonly canManagePublication = computed(() => this.adminAuthState.can('photosManagePublication'));
+  private readonly shouldIncludeUnpublished = computed(() => this.adminAuthState.can('photosViewUnpublished'));
+  private readonly loadPhotosEffect = effect((onCleanup) => {
+    const includeUnpublished = this.shouldIncludeUnpublished();
+    const subscription = this.photoApi.getPhotos(120, 0, includeUnpublished).subscribe({
+      next: (response) => {
+        this.errorMessage = '';
+        this.photos = response.rows;
+      },
+      error: () => {
+        this.photos = [];
+        this.errorMessage = 'Unable to load photos right now.';
+      }
+    });
+
+    onCleanup(() => {
+      subscription.unsubscribe();
+    });
+  });
 
   photos: Photo[] = [];
   activePhoto: Photo | null = null;
   activePhotoImageStyle: Record<string, number> = {};
   errorMessage = '';
-
-  ngOnInit(): void {
-    this.photoApi.getPhotos().subscribe({
-      next: (response) => {
-        this.photos = response.rows;
-      },
-      error: () => {
-        this.errorMessage = 'Unable to load photos right now.';
-      }
-    });
-  }
 
   openPhoto(photo: Photo, event?: Event): void {
     this.activePhoto = photo;
@@ -62,7 +74,37 @@ export class PhotosPageComponent implements OnInit, OnDestroy {
   }
 
   trackByPhoto(index: number, photo: Photo): string {
-    return `${photo.id}-${index}`;
+    return photo.id;
+  }
+
+  isUpdatingPhoto(photoId: string): boolean {
+    return this.pendingPhotoUpdates().has(photoId);
+  }
+
+  updatePhotoPublished(photo: Photo, event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const nextValue = input?.checked;
+
+    if (typeof nextValue !== 'boolean' || this.isUpdatingPhoto(photo.id) || nextValue === photo.isPublished) {
+      return;
+    }
+
+    const previousValue = photo.isPublished;
+    this.patchPhotoPublication(photo.id, nextValue);
+    this.markPhotoPending(photo.id, true);
+
+    this.photoApi.updatePhotoPublication(photo.id, nextValue).subscribe({
+      next: (updatedPhoto) => {
+        this.patchPhoto(updatedPhoto);
+        this.markPhotoPending(photo.id, false);
+        this.errorMessage = '';
+      },
+      error: () => {
+        this.patchPhotoPublication(photo.id, previousValue);
+        this.markPhotoPending(photo.id, false);
+        this.errorMessage = 'Unable to update photo visibility right now.';
+      }
+    });
   }
 
   onThumbLoad(event: Event, photo: Photo): void {
@@ -184,6 +226,26 @@ export class PhotosPageComponent implements OnInit, OnDestroy {
     }
 
     return this.fallbackAspectRatio;
+  }
+
+  private patchPhoto(updatedPhoto: Photo): void {
+    this.photos = this.photos.map((photo) => (photo.id === updatedPhoto.id ? updatedPhoto : photo));
+  }
+
+  private patchPhotoPublication(photoId: string, isPublished: boolean): void {
+    this.photos = this.photos.map((photo) => (photo.id === photoId ? { ...photo, isPublished } : photo));
+  }
+
+  private markPhotoPending(photoId: string, isPending: boolean): void {
+    const next = new Set(this.pendingPhotoUpdates());
+
+    if (isPending) {
+      next.add(photoId);
+    } else {
+      next.delete(photoId);
+    }
+
+    this.pendingPhotoUpdates.set(next);
   }
 
   ngOnDestroy(): void {

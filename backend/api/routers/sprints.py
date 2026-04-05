@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from api.dependencies.auth import require_write_token
+from api.dependencies.auth import require_admin_mutation
 from core.errors import ValidationAppError
 from database import get_db
+from models import AdminSession
 from schemas import (
     BestTimesQuery,
     BestTimesResponse,
@@ -32,7 +33,7 @@ router = APIRouter(prefix="/v1/sprints", tags=["sprints"])
 @router.post("", response_model=SprintRow)
 def create_sprint_entry_route(
     payload: SprintCreateRequest,
-    _auth: None = Depends(require_write_token),
+    _auth: AdminSession = Depends(require_admin_mutation),
     db: Session = Depends(get_db),
 ) -> SprintRow:
     return create_sprint_entry(db=db, payload=payload)
@@ -42,7 +43,7 @@ def create_sprint_entry_route(
 def update_sprint_entry_route(
     sprint_id: int,
     payload: SprintUpdateRequest,
-    _auth: None = Depends(require_write_token),
+    _auth: AdminSession = Depends(require_admin_mutation),
     db: Session = Depends(get_db),
 ) -> SprintRow:
     return update_sprint_entry(db=db, sprint_id=sprint_id, payload=payload)
@@ -51,7 +52,7 @@ def update_sprint_entry_route(
 @router.delete("/{sprint_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_sprint_entry_route(
     sprint_id: int,
-    _auth: None = Depends(require_write_token),
+    _auth: AdminSession = Depends(require_admin_mutation),
     db: Session = Depends(get_db),
 ) -> Response:
     delete_sprint_entry(db=db, sprint_id=sprint_id)

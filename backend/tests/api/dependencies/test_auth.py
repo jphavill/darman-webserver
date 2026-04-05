@@ -1,28 +1,27 @@
 import pytest
-from fastapi.security import HTTPAuthorizationCredentials
 
-from api.dependencies.auth import require_write_token
+from api.dependencies.auth import validate_admin_api_key
 from core.errors import ServiceUnavailableAppError, UnauthorizedAppError
 
 
-def test_require_write_token_missing_config(monkeypatch):
+def test_validate_admin_api_key_missing_config(monkeypatch):
     monkeypatch.delenv("ADMIN_API_TOKEN", raising=False)
 
     with pytest.raises(ServiceUnavailableAppError) as exc:
-        require_write_token(HTTPAuthorizationCredentials(scheme="Bearer", credentials="token"))
+        validate_admin_api_key("token")
 
     assert exc.value.status_code == 503
 
 
-def test_require_write_token_rejects_invalid_token(monkeypatch):
+def test_validate_admin_api_key_rejects_invalid_token(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "expected")
 
     with pytest.raises(UnauthorizedAppError) as exc:
-        require_write_token(HTTPAuthorizationCredentials(scheme="Bearer", credentials="wrong"))
+        validate_admin_api_key("wrong")
 
     assert exc.value.status_code == 401
 
 
-def test_require_write_token_accepts_valid_token(monkeypatch):
+def test_validate_admin_api_key_accepts_valid_token(monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "expected")
-    require_write_token(HTTPAuthorizationCredentials(scheme="Bearer", credentials="expected"))
+    validate_admin_api_key("expected")

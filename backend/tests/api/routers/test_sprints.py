@@ -1,7 +1,15 @@
+def _auth_headers(client, token: str) -> dict[str, str]:
+    login = client.post("/v1/system/admin/session", json={"api_key": token})
+    assert login.status_code == 200
+    csrf = login.cookies.get("XSRF-TOKEN")
+    assert csrf
+    return {"X-XSRF-TOKEN": csrf}
+
+
 def _insert(client, token: str, payload: dict):
     return client.post(
         "/v1/sprints",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
         json=payload,
     )
 
@@ -9,14 +17,14 @@ def _insert(client, token: str, payload: dict):
 def _delete(client, token: str, sprint_id: int):
     return client.delete(
         f"/v1/sprints/{sprint_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
     )
 
 
 def _patch_update(client, token: str, sprint_id: int, payload: dict):
     return client.patch(
         f"/v1/sprints/{sprint_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=_auth_headers(client, token),
         json=payload,
     )
 
@@ -452,6 +460,7 @@ def test_delete_sprint_requires_auth(client, monkeypatch):
         },
     )
     sprint_id = created.json()["id"]
+    client.cookies.clear()
 
     response = client.delete(f"/v1/sprints/{sprint_id}")
     assert response.status_code == 401

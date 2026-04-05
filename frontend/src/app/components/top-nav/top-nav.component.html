@@ -1,9 +1,55 @@
 <nav class="top-nav" aria-label="Primary navigation">
-  <a class="brand" routerLink="/" routerLinkActive="active">Jason Havill</a>
+  <button class="brand" type="button" (click)="openLoginModal()">Jason Havill</button>
   <div class="links">
     <a routerLink="/" [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="active">Home</a>
     <a routerLink="/leaderboard" routerLinkActive="active">Leaderboard</a>
     <a routerLink="/charts" routerLinkActive="active">Charts</a>
     <a routerLink="/photos" routerLinkActive="active">Photos</a>
+    @if (isAuthenticated()) {
+      <button type="button" class="admin-pill" (click)="logoutFromBadge()" aria-label="Log out admin mode">Admin</button>
+    }
+    @if (logoutError()) {
+      <span class="nav-auth-error" role="status">{{ logoutError() }}</span>
+    }
   </div>
 </nav>
+
+@if (loginModalOpen) {
+  <div class="login-backdrop" (click)="closeLoginModal()"></div>
+
+  <article class="login-modal" role="dialog" aria-modal="true" aria-label="Admin login" (click)="$event.stopPropagation()">
+    <h2>Admin Login</h2>
+
+    <p class="modal-copy">Use your admin API key to unlock editing controls.</p>
+
+    @if (!isAuthenticated()) {
+      <form (submit)="submitLogin($event)">
+        <label for="admin-api-key">API key</label>
+        <input
+          id="admin-api-key"
+          name="admin-api-key"
+          type="password"
+          autocomplete="off"
+          [disabled]="isLoggingIn()"
+          [(ngModel)]="apiTokenInput"
+        />
+
+        @if (loginError()) {
+          <p class="auth-error">{{ loginError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="secondary" (click)="closeLoginModal()">Cancel</button>
+          <button type="submit" [disabled]="isLoggingIn()">{{ isLoggingIn() ? 'Signing in...' : 'Sign in' }}</button>
+        </div>
+      </form>
+    } @else {
+      <p class="auth-ok">You are logged in as admin.</p>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary" (click)="closeLoginModal()">Close</button>
+        <button type="button" (click)="logout()">Log out</button>
+      </div>
+    }
+  </article>
+}

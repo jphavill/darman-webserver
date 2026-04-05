@@ -17,7 +17,7 @@ describe('PhotosPageComponent', () => {
     updatedAt: '2024-01-01'
   };
 
-  it('loads photos on init', () => {
+  it('loads photos on init', async () => {
     TestBed.configureTestingModule({
       providers: [
         {
@@ -30,9 +30,9 @@ describe('PhotosPageComponent', () => {
     });
 
     const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
-    component.ngOnInit();
-
-    expect(component.photos).toEqual([photo]);
+    await vi.waitFor(() => {
+      expect(component.photos).toEqual([photo]);
+    });
   });
 
   it('opens and closes a photo overlay', () => {

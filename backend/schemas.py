@@ -218,6 +218,20 @@ class PhotoListResponse(BaseModel):
 class PhotoListQuery(BaseModel):
     limit: int = Field(default=60, ge=1, le=200)
     offset: int = Field(default=0, ge=0)
+    include_unpublished: bool = Field(default=False)
+
+
+class AdminFeatureFlags(BaseModel):
+    photos_view_unpublished: bool = True
+    photos_manage_publication: bool = True
+
+
+class AdminSessionResponse(BaseModel):
+    feature_flags: AdminFeatureFlags
+
+
+class AdminSessionCreateRequest(BaseModel):
+    api_key: str = Field(min_length=1)
 
 
 def _collapse_whitespace(value: str) -> str:

@@ -21,10 +21,13 @@
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
   border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
 }
 
 .links {
   display: flex;
+  align-items: center;
   gap: 0.4rem;
 }
 
@@ -46,6 +49,112 @@
   color: var(--text) !important;
   border-color: var(--accent-soft) !important;
   background: rgba(143, 184, 232, 0.12);
+}
+
+.admin-pill {
+  color: var(--text);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--success);
+  background: rgba(46, 143, 103, 0.2);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.nav-auth-error {
+  color: var(--error);
+  font-size: 0.78rem;
+  border: 1px solid color-mix(in srgb, var(--error) 65%, transparent);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  white-space: nowrap;
+}
+
+.login-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--overlay);
+}
+
+.login-modal {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 420px);
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-large);
+  padding: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.login-modal h2 {
+  font-family: var(--font-display);
+  color: var(--accent-strong);
+}
+
+.modal-copy {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.login-modal form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.login-modal label {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.login-modal input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0.58rem 0.65rem;
+}
+
+.auth-error {
+  color: var(--error);
+  font-size: 0.86rem;
+}
+
+.auth-ok {
+  color: var(--success);
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.modal-actions button {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.modal-actions button.secondary {
+  background: transparent;
+}
+
+.modal-actions button:disabled {
+  opacity: 0.64;
+  cursor: default;
 }
 
 @media (max-width: 680px) {

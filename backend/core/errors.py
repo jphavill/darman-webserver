@@ -22,6 +22,11 @@ class UnauthorizedAppError(AppError):
     detail = "Unauthorized"
 
 
+class ForbiddenAppError(AppError):
+    status_code = 403
+    detail = "Forbidden"
+
+
 class ServiceUnavailableAppError(AppError):
     status_code = 503
     detail = "Service unavailable"

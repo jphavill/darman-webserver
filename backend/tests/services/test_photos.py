@@ -99,6 +99,40 @@ def test_list_photos_only_returns_published_sorted(db_session):
     assert listed.rows[1].caption == "Visible second"
 
 
+def test_list_photos_can_include_unpublished_for_admin(db_session):
+    now = datetime.now(timezone.utc)
+    batch_upsert_photos(
+        db=db_session,
+        payload=PhotoBatchUpsertRequest(
+            rows=[
+                PhotoUpsertItem(
+                    id=uuid4(),
+                    alt_text="Visible",
+                    caption="Visible",
+                    thumb_url="/media/gallery/visible-thumb.webp",
+                    full_url="/media/gallery/visible-full.webp",
+                    captured_at=now - timedelta(days=1),
+                    is_published=True,
+                ),
+                PhotoUpsertItem(
+                    id=uuid4(),
+                    alt_text="Hidden",
+                    caption="Hidden",
+                    thumb_url="/media/gallery/hidden-thumb.webp",
+                    full_url="/media/gallery/hidden-full.webp",
+                    captured_at=now,
+                    is_published=False,
+                ),
+            ]
+        ),
+    )
+
+    listed = list_photos(db=db_session, limit=10, offset=0, include_unpublished=True)
+
+    assert listed.total == 2
+    assert {row.caption for row in listed.rows} == {"Visible", "Hidden"}
+
+
 def test_update_photo_updates_existing_record(db_session):
     photo_id = uuid4()
     original_capture = datetime.now(timezone.utc) - timedelta(days=3)

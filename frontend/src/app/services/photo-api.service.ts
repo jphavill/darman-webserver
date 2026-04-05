@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { buildHttpParams } from '../core/http/query-params';
-import { PhotoListResponse, PhotoListResponseApi, mapPhotoApiToPhoto } from '../models/photo.model';
+import { Photo, PhotoApi, PhotoListResponse, PhotoListResponseApi, mapPhotoApiToPhoto } from '../models/photo.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +10,8 @@ import { PhotoListResponse, PhotoListResponseApi, mapPhotoApiToPhoto } from '../
 export class PhotoApiService {
   private readonly http = inject(HttpClient);
 
-  getPhotos(limit = 120, offset = 0): Observable<PhotoListResponse> {
-    const params = buildHttpParams({ limit, offset });
+  getPhotos(limit = 120, offset = 0, includeUnpublished = false): Observable<PhotoListResponse> {
+    const params = buildHttpParams({ limit, offset, include_unpublished: includeUnpublished });
 
     return this.http.get<PhotoListResponseApi>('/api/v1/photos', { params }).pipe(
       map((response) => ({
@@ -19,5 +19,9 @@ export class PhotoApiService {
         rows: response.rows.map(mapPhotoApiToPhoto)
       }))
     );
+  }
+
+  updatePhotoPublication(photoId: string, isPublished: boolean): Observable<Photo> {
+    return this.http.patch<PhotoApi>(`/api/v1/photos/${photoId}`, { is_published: isPublished }).pipe(map(mapPhotoApiToPhoto));
   }
 }

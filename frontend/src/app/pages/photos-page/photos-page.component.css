@@ -39,10 +39,19 @@
   background: var(--surface);
   box-shadow: var(--shadow-soft);
   overflow: visible;
-  cursor: pointer;
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
   transform-origin: center center;
   grid-row: span var(--row-span, 40);
+}
+
+.photo-open-btn {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .photo-tile img {
@@ -52,15 +61,48 @@
 }
 
 .photo-tile:hover,
-.photo-tile:focus-visible {
+.photo-tile:focus-within {
   transform: scale(1.15);
   border-color: var(--accent);
   box-shadow: 0 22px 46px rgba(0, 0, 0, 0.42);
   z-index: 4;
 }
 
-.photo-tile:focus-visible {
+.photo-open-btn:focus-visible {
   outline: none;
+}
+
+.photo-tile.unpublished {
+  border-color: var(--warning);
+}
+
+.photo-tile.unpublished img {
+  filter: grayscale(1) saturate(0.08) brightness(0.58) contrast(0.82);
+}
+
+.publish-toggle {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  z-index: 5;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(16, 22, 30, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+}
+
+.publish-toggle input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.publish-toggle input:disabled {
+  cursor: default;
 }
 
 .photo-backdrop {
@@ -167,7 +209,7 @@
   }
 
   .photo-tile:hover,
-  .photo-tile:focus-visible {
+  .photo-tile:focus-within {
     transform: scale(1.1);
   }
 }
@@ -194,7 +236,7 @@
   }
 
   .photo-tile:hover,
-  .photo-tile:focus-visible {
+  .photo-tile:focus-within {
     transform: scale(1.04);
   }
 }
