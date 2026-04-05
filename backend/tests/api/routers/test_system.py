@@ -83,6 +83,7 @@ def test_admin_session_logout_clears_session(client, monkeypatch):
 
 def test_rate_limit_applies_to_admin_login_attempts(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
     monkeypatch.setenv("RATE_LIMIT_MAX_REQUESTS", "1")
     _apply_env_settings()
 
@@ -94,6 +95,7 @@ def test_rate_limit_applies_to_admin_login_attempts(client, monkeypatch):
 
 
 def test_rate_limit_applies_to_public_get_requests(client, monkeypatch):
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
     monkeypatch.setenv("RATE_LIMIT_MAX_REQUESTS", "1")
     _apply_env_settings()
 
@@ -123,6 +125,7 @@ def test_rate_limit_is_disabled_when_configured_off(client, monkeypatch):
 
 def test_authenticated_admin_requests_are_rate_limited(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
     monkeypatch.setenv("RATE_LIMIT_MAX_REQUESTS", "1")
     _apply_env_settings()
 
@@ -134,6 +137,7 @@ def test_authenticated_admin_requests_are_rate_limited(client, monkeypatch):
 
 
 def test_invalid_admin_session_does_not_bypass_rate_limit(client, monkeypatch):
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
     monkeypatch.setenv("RATE_LIMIT_MAX_REQUESTS", "1")
     _apply_env_settings()
 
@@ -144,4 +148,3 @@ def test_invalid_admin_session_does_not_bypass_rate_limit(client, monkeypatch):
 
     assert first.status_code == 401
     assert second.status_code == 429
-
