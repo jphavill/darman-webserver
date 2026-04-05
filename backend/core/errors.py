@@ -27,6 +27,11 @@ class ForbiddenAppError(AppError):
     detail = "Forbidden"
 
 
+class TooManyRequestsAppError(AppError):
+    status_code = 429
+    detail = "Too many requests"
+
+
 class ServiceUnavailableAppError(AppError):
     status_code = 503
     detail = "Service unavailable"

@@ -16,6 +16,11 @@ class Settings:
     admin_session_cookie_path: str
     admin_csrf_cookie_name: str
     admin_csrf_header_name: str
+    rate_limit_enabled: bool
+    rate_limit_window_seconds: int
+    rate_limit_max_requests: int
+    rate_limit_trust_proxy: bool
+    rate_limit_ip_header: str
 
 
 def _parse_csv(value: str) -> list[str]:
@@ -49,4 +54,15 @@ def get_settings() -> Settings:
         admin_session_cookie_path=os.getenv("ADMIN_SESSION_COOKIE_PATH", "/"),
         admin_csrf_cookie_name=os.getenv("ADMIN_CSRF_COOKIE_NAME", "XSRF-TOKEN"),
         admin_csrf_header_name=os.getenv("ADMIN_CSRF_HEADER_NAME", "X-XSRF-TOKEN"),
+        rate_limit_enabled=_parse_bool(
+            os.getenv("RATE_LIMIT_ENABLED", "true"),
+            default=True,
+        ),
+        rate_limit_window_seconds=int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60")),
+        rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "120")),
+        rate_limit_trust_proxy=_parse_bool(
+            os.getenv("RATE_LIMIT_TRUST_PROXY", "false"),
+            default=False,
+        ),
+        rate_limit_ip_header=os.getenv("RATE_LIMIT_IP_HEADER", "CF-Connecting-IP"),
     )

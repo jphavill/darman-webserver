@@ -29,6 +29,9 @@ services:
       - ./media:/srv/media:ro
       - caddy_data:/data
       - caddy_config:/config
+    environment:
+      - ROOT_DOMAIN=${ROOT_DOMAIN:-example.com}
+      - WWW_DOMAIN=${WWW_DOMAIN:-www.example.com}
     networks:
       - public_web
     depends_on:
@@ -60,6 +63,12 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - ADMIN_API_TOKEN=${ADMIN_API_TOKEN}
       - ADMIN_SESSION_COOKIE_SECURE=${ADMIN_SESSION_COOKIE_SECURE:-true}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-http://localhost,http://localhost:4200}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_WINDOW_SECONDS=${RATE_LIMIT_WINDOW_SECONDS:-60}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-120}
+      - RATE_LIMIT_TRUST_PROXY=true
+      - RATE_LIMIT_IP_HEADER=${RATE_LIMIT_IP_HEADER:-CF-Connecting-IP}
     volumes:
       - ./backend:/app
     command: sh -c "alembic -c alembic.ini upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8000"

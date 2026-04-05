@@ -1,0 +1,10 @@
+tunnel: ${CLOUDFLARE_TUNNEL_ID}
+
+ingress:
+  - hostname: ${ROOT_DOMAIN}
+    service: http://caddy:80
+
+  - hostname: ${WWW_DOMAIN}
+    service: http://caddy:80
+
+  - service: http_status:404

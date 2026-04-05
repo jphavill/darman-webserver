@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from psycopg2 import sql
 from sqlalchemy import text
 
+from core.rate_limit import clear_rate_limit_state
 from core.settings import get_settings
 
 
@@ -140,6 +141,7 @@ def client(db_session) -> Generator[TestClient, None, None]:
 @pytest.fixture(autouse=True)
 def admin_cookie_test_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     monkeypatch.setenv("ADMIN_SESSION_COOKIE_SECURE", "false")
+    monkeypatch.setenv("RATE_LIMIT_TRUST_PROXY", "false")
     yield
 
 
@@ -148,3 +150,10 @@ def clear_settings_cache(admin_cookie_test_settings: None) -> Generator[None, No
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits() -> Generator[None, None, None]:
+    clear_rate_limit_state()
+    yield
+    clear_rate_limit_state()

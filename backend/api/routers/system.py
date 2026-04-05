@@ -17,11 +17,6 @@ def read_root() -> dict[str, str]:
     return {"message": "API is running"}
 
 
-@router.get("/health")
-def health_check() -> dict[str, str]:
-    return {"status": "healthy"}
-
-
 def _set_admin_cookies(response: Response, session_token: str, csrf_token: str) -> None:
     settings = get_settings()
     max_age = settings.admin_session_ttl_seconds

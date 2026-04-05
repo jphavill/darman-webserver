@@ -16,10 +16,13 @@ A Docker-based webserver stack with Angular frontend, Python backend, PostgreSQL
    ```
 
 2. Edit `.env` with your desired values:
-   - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` - PostgreSQL credentials/database name
-   - `ADMIN_API_TOKEN` - Admin login bootstrap token for creating admin sessions
-   - `ADMIN_SESSION_COOKIE_SECURE` - Set to `true` in non-local environments (default is secure)
-   - `CLOUDFLARE_TUNNEL_TOKEN` - Required for production only (Cloudflare Zero Trust tunnel token)
+    - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` - PostgreSQL credentials/database name
+    - `ADMIN_API_TOKEN` - Admin login bootstrap token for creating admin sessions
+    - `ADMIN_SESSION_COOKIE_SECURE` - Set to `true` in non-local environments (default is secure)
+    - `ROOT_DOMAIN` / `WWW_DOMAIN` - Domains used by the production Caddy config
+    - `CORS_ALLOW_ORIGINS` - Comma-separated list of allowed CORS origins
+    - `CLOUDFLARE_TUNNEL_TOKEN` / `CLOUDFLARE_TUNNEL_ID` - Required for production tunnel and cloudflared config rendering
+    - `RATE_LIMIT_*` - Optional global request rate-limit controls
 
 3. Create a local media folder for images:
    ```bash
@@ -45,12 +48,13 @@ npm start
 docker compose -f docker-compose.local.yml up -d --build
 
 # Production mode (with Cloudflare Tunnel)
+./scripts/render-cloudflared-config.sh
 docker compose up -d --build
 ```
 
 Access at:
 - Local: http://localhost
-- Production: https://www.jasonhavill.com
+- Production: `https://$WWW_DOMAIN`
 
 ## Image Hosting (Local Folder via Caddy)
 
@@ -166,7 +170,11 @@ docker compose up -d
 
 This includes the `cloudflared` service which connects to Cloudflare Tunnel.
 
-**Required:** Set `CLOUDFLARE_TUNNEL_TOKEN` in your `.env` file before running.
+**Required:** Set `CLOUDFLARE_TUNNEL_TOKEN`, `CLOUDFLARE_TUNNEL_ID`, `ROOT_DOMAIN`, and `WWW_DOMAIN` in your `.env` file before running.
+
+Global rate limiting applies to all requests, including authenticated admin requests. Production compose (`docker-compose.yml`) trusts proxy headers and local compose (`docker-compose.local.yml`) does not.
+
+Render `cloudflared/config.yml` from `cloudflared/config.template.yml` before starting production compose.
 
 ## Common Commands
 

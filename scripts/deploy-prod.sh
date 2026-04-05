@@ -14,7 +14,8 @@ usage() {
   printf '  3) backend tests (backend service container)\n'
   printf '  4) postgres backup to %s\n' "$BACKUP_DIR"
   printf '  5) remove backups older than 14 days\n'
-  printf '  6) docker compose down/build/up\n'
+  printf '  6) render cloudflared config\n'
+  printf '  7) docker compose down/build/up\n'
 }
 
 log() {
@@ -119,6 +120,9 @@ run_cmd mv "$LOCAL_BACKUP_PATH" "$FINAL_BACKUP_PATH"
 
 log "Pruning backups older than 14 days"
 run_cmd find "$BACKUP_DIR" -maxdepth 1 -type f -name 'data_backup_*.dump' -mtime +14 -delete
+
+log "Rendering cloudflared config"
+run_in_dir "$REPO_ROOT" bash scripts/render-cloudflared-config.sh
 
 log "Deploying production stack"
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml down

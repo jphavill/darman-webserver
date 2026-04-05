@@ -18,3 +18,4 @@ __pycache__/
 media/*
 !media/.gitkeep
 !media/gallery-manifest.json
+cloudflared/config.yml
