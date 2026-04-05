@@ -18,6 +18,14 @@
         </button>
       </div>
 
+      @if (activeProject.images.length > 1) {
+        <div class="expanded-gallery">
+          @for (image of activeProject.images; track image.id) {
+            <img [src]="image.thumbUrl" [alt]="image.altText" loading="lazy" />
+          }
+        </div>
+      }
+
       <p class="expanded-short">{{ activeProject.shortDescription }}</p>
 
       <div class="markdown" [innerHTML]="activeProjectMarkdown"></div>

@@ -3,7 +3,18 @@
 
   <div class="projects-grid">
     @for (project of projects; track project.id) {
-      <app-project-pill [project]="project" (openProjectRequested)="openProjectRequested.emit($event)"></app-project-pill>
+      <app-project-pill
+        [project]="project"
+        [adminCanManagePublication]="adminCanManagePublication"
+        [adminCanManageContent]="adminCanManageContent"
+        [publicationUpdatePending]="publicationPendingProjectIds.has(project.id)"
+        [canMoveUp]="$index > 0"
+        [canMoveDown]="$index < projects.length - 1"
+        (openProjectRequested)="openProjectRequested.emit($event)"
+        (editRequested)="editRequested.emit($event)"
+        (moveRequested)="moveRequested.emit($event)"
+        (publicationToggled)="publicationToggled.emit($event)"
+      ></app-project-pill>
     }
   </div>
 </section>

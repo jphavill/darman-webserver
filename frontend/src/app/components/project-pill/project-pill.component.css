@@ -1,9 +1,7 @@
 .project-pill {
-  appearance: none;
+  position: relative;
   display: block;
   width: 100%;
-  text-align: left;
-  cursor: pointer;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 22px;
@@ -13,10 +11,26 @@
   box-shadow: var(--shadow-soft);
 }
 
-.project-pill:hover {
+.project-pill:hover,
+.project-pill:focus-within {
   transform: translateY(-4px);
   border-color: var(--accent);
   box-shadow: var(--shadow-medium);
+}
+
+.project-open-btn {
+  appearance: none;
+  border: 0;
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.project-open-btn:focus-visible {
+  outline: none;
 }
 
 .project-pill-media {
@@ -64,4 +78,110 @@
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.project-pill.unpublished .project-pill-media,
+.project-pill.unpublished p,
+.project-pill.unpublished .tags {
+  filter: grayscale(1);
+}
+
+.project-pill.unpublished {
+  border-color: color-mix(in srgb, var(--warning) 48%, var(--border));
+}
+
+.pill-admin-actions {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.pill-btn {
+  border: 1px solid var(--border-strong);
+  background: rgba(16, 22, 30, 0.9);
+  color: var(--text);
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.pill-btn.edit {
+  width: 2rem;
+}
+
+.pill-btn:hover {
+  border-color: var(--accent);
+  background: rgba(16, 22, 30, 0.96);
+  transform: translateY(-1px);
+}
+
+.pill-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.pill-btn ng-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.publish-toggle {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 2;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(16, 22, 30, 0.9);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 0;
+}
+
+.publish-toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid color-mix(in srgb, white 85%, transparent);
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--surface) 70%, black 30%);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.publish-toggle input::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.3rem;
+  border-left: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  transform: rotate(-45deg);
+}
+
+.publish-toggle input:checked {
+  border-color: white;
+}
+
+.publish-toggle input:checked::after {
+  border-left-color: white;
+  border-bottom-color: white;
+}
+
+.publish-toggle input:disabled {
+  cursor: default;
 }

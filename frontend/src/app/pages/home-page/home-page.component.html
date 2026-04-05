@@ -1,20 +1,71 @@
 <div class="container">
   <app-site-header></app-site-header>
 
-  @if (softwareProjects.length > 0) {
+  @if (errorMessage()) {
+    <p class="page-error" role="status">{{ errorMessage() }}</p>
+  }
+
+  @if (canManageProjectContent()) {
+    <section class="admin-controls">
+      <button type="button" class="admin-btn" (click)="toggleAdminPanel()">
+        {{ adminPanelOpen ? 'Close Manage Projects' : 'Manage Projects' }}
+      </button>
+
+      @if (adminPanelOpen) {
+        <div class="admin-panel">
+          <div class="admin-panel-header">
+            <h2>Project Admin</h2>
+            <p>Create, publish, reorder, and manage images in one place.</p>
+            @if (adminStatusMessage()) {
+              <p class="status-message">{{ adminStatusMessage() }}</p>
+            }
+          </div>
+          <app-project-create-panel (createRequested)="createProject($event)"></app-project-create-panel>
+        </div>
+      }
+    </section>
+  }
+
+  @if (softwareProjects().length > 0) {
     <app-project-section
       title="Software Projects"
-      [projects]="softwareProjects"
+      [projects]="softwareProjects()"
+      [adminCanManagePublication]="canManageProjectPublication()"
+      [adminCanManageContent]="canManageProjectContent()"
+      [publicationPendingProjectIds]="pendingProjectPublicationUpdates()"
       (openProjectRequested)="openProject($event)"
+      (editRequested)="startEdit($event)"
+      (moveRequested)="moveProjectFromPill($event)"
+      (publicationToggled)="toggleProjectPublication($event)"
     ></app-project-section>
   }
 
-  @if (physicalProjects.length > 0) {
+  @if (physicalProjects().length > 0) {
     <app-project-section
       title="Physical Projects"
-      [projects]="physicalProjects"
+      [projects]="physicalProjects()"
+      [adminCanManagePublication]="canManageProjectPublication()"
+      [adminCanManageContent]="canManageProjectContent()"
+      [publicationPendingProjectIds]="pendingProjectPublicationUpdates()"
       (openProjectRequested)="openProject($event)"
+      (editRequested)="startEdit($event)"
+      (moveRequested)="moveProjectFromPill($event)"
+      (publicationToggled)="toggleProjectPublication($event)"
     ></app-project-section>
+  }
+
+  @if (editingProject(); as project) {
+    <app-project-edit-modal
+      [project]="project"
+      [statusMessage]="adminStatusMessage()"
+      [errorMessage]="errorMessage()"
+      (closed)="cancelEdit()"
+      (saveRequested)="saveEdit($event)"
+      (uploadRequested)="uploadImage($event)"
+      (setHeroRequested)="setHero($event)"
+      (moveImageRequested)="moveImage($event)"
+      (deleteImageRequested)="deleteImage($event)"
+    ></app-project-edit-modal>
   }
 
   <app-site-footer></app-site-footer>

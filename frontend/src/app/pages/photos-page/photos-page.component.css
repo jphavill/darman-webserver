@@ -85,20 +85,47 @@
   top: 0.45rem;
   right: 0.45rem;
   z-index: 5;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: 999px;
   border: 1px solid var(--border-strong);
   background: rgba(16, 22, 30, 0.92);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.3rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 0;
 }
 
 .publish-toggle input {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1rem;
+  height: 1rem;
   margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid color-mix(in srgb, white 85%, transparent);
+  border-radius: 0.2rem;
+  background: color-mix(in srgb, var(--surface) 70%, black 30%);
+  display: grid;
+  place-items: center;
   cursor: pointer;
+}
+
+.publish-toggle input::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.3rem;
+  border-left: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  transform: rotate(-45deg);
+}
+
+.publish-toggle input:checked {
+  border-color: white;
+}
+
+.publish-toggle input:checked::after {
+  border-left-color: white;
+  border-bottom-color: white;
 }
 
 .publish-toggle input:disabled {

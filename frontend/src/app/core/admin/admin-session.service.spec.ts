@@ -6,6 +6,14 @@ import { AdminAuthStateService } from './admin-auth-state.service';
 import { AdminSessionService } from './admin-session.service';
 
 describe('AdminSessionService', () => {
+  const allFlags = {
+    photosViewUnpublished: true,
+    photosManagePublication: true,
+    projectsViewUnpublished: true,
+    projectsManagePublication: true,
+    projectsManageContent: true
+  };
+
   let service: AdminSessionService;
   let authState: AdminAuthStateService;
   let httpMock: HttpTestingController;
@@ -39,7 +47,10 @@ describe('AdminSessionService', () => {
     request.flush({
       feature_flags: {
         photos_view_unpublished: true,
-        photos_manage_publication: true
+        photos_manage_publication: true,
+        projects_view_unpublished: true,
+        projects_manage_publication: true,
+        projects_manage_content: true
       }
     });
 
@@ -48,7 +59,7 @@ describe('AdminSessionService', () => {
   });
 
   it('refresh clears auth state on unauthorized session', () => {
-    authState.setSession({ photosViewUnpublished: true, photosManagePublication: true });
+    authState.setSession(allFlags);
 
     service.refreshSession().subscribe((isLoggedIn) => {
       expect(isLoggedIn).toBe(false);
@@ -62,7 +73,7 @@ describe('AdminSessionService', () => {
   });
 
   it('logout clears auth state when server revoke succeeds', () => {
-    authState.setSession({ photosViewUnpublished: true, photosManagePublication: true });
+    authState.setSession(allFlags);
 
     service.logout();
 
@@ -79,7 +90,7 @@ describe('AdminSessionService', () => {
   });
 
   it('logout keeps auth state and surfaces error when session remains active', () => {
-    authState.setSession({ photosViewUnpublished: true, photosManagePublication: true });
+    authState.setSession(allFlags);
 
     service.logout();
 
@@ -92,7 +103,10 @@ describe('AdminSessionService', () => {
     refreshRequest.flush({
       feature_flags: {
         photos_view_unpublished: true,
-        photos_manage_publication: true
+        photos_manage_publication: true,
+        projects_view_unpublished: true,
+        projects_manage_publication: true,
+        projects_manage_content: true
       }
     });
 

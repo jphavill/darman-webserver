@@ -6,3 +6,6 @@ pydantic
 alembic
 pytest
 httpx
+Pillow
+pillow-heif
+python-multipart

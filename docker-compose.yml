@@ -69,8 +69,10 @@ services:
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-120}
       - RATE_LIMIT_TRUST_PROXY=true
       - RATE_LIMIT_IP_HEADER=${RATE_LIMIT_IP_HEADER:-CF-Connecting-IP}
+      - MEDIA_ROOT_PATH=/app/media
     volumes:
       - ./backend:/app
+      - ./media:/app/media
     command: sh -c "alembic -c alembic.ini upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8000"
     networks:
       - public_web

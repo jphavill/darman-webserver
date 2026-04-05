@@ -1,6 +1,18 @@
 import uuid
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -80,3 +92,99 @@ class AdminSession(Base):
         nullable=False,
     )
     revoked_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Project(Base):
+    __tablename__ = "projects"
+    __table_args__ = (
+        CheckConstraint("type IN ('software', 'physical')", name="ck_projects_type_valid"),
+        Index("ix_projects_type_published_sort", "type", "is_published", "sort_order"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    short_description: Mapped[str] = mapped_column(String(500), nullable=False)
+    long_description_md: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    images = relationship(
+        "ProjectImage",
+        back_populates="project",
+        passive_deletes=True,
+        order_by="ProjectImage.sort_order",
+    )
+    links = relationship(
+        "ProjectLink",
+        back_populates="project",
+        passive_deletes=True,
+        order_by="ProjectLink.sort_order",
+    )
+
+
+class ProjectImage(Base):
+    __tablename__ = "project_images"
+    __table_args__ = (
+        Index("ix_project_images_project_sort", "project_id", "sort_order"),
+        Index(
+            "ux_project_images_one_hero_per_project",
+            "project_id",
+            unique=True,
+            postgresql_where=text("is_hero = true"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    thumb_url: Mapped[str] = mapped_column(String(400), nullable=False)
+    full_url: Mapped[str] = mapped_column(String(400), nullable=False)
+    alt_text: Mapped[str] = mapped_column(String(240), nullable=False)
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_hero: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    project = relationship("Project", back_populates="images")
+
+
+class ProjectLink(Base):
+    __tablename__ = "project_links"
+    __table_args__ = (
+        CheckConstraint("type IN ('github', 'website', 'cults3d', 'other')", name="ck_project_links_type_valid"),
+        Index("ix_project_links_project_sort", "project_id", "sort_order"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    type: Mapped[str] = mapped_column(String(20), nullable=False)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    project = relationship("Project", back_populates="links")

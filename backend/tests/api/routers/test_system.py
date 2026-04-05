@@ -40,6 +40,9 @@ def test_admin_session_login_and_read_returns_feature_flags(client, monkeypatch)
         "feature_flags": {
             "photos_view_unpublished": True,
             "photos_manage_publication": True,
+            "projects_view_unpublished": True,
+            "projects_manage_publication": True,
+            "projects_manage_content": True,
         }
     }
 

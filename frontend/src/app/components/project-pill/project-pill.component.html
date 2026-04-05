@@ -1,14 +1,54 @@
-<button class="project-pill" type="button" (click)="requestOpen($event)">
-  <div class="project-pill-media" [style.background-image]="project.thumbnail ? 'url(' + project.thumbnail + ')' : 'none'">
-    <div class="project-pill-overlay"></div>
-    <h3>{{ project.title }}</h3>
-  </div>
+<article class="project-pill" [class.unpublished]="!project.isPublished">
+  <button class="project-open-btn" type="button" (click)="requestOpen($event)">
+    <div class="project-pill-media" [style.background-image]="project.thumbnail ? 'url(' + project.thumbnail + ')' : 'none'">
+      <div class="project-pill-overlay"></div>
+      <h3>{{ project.title }}</h3>
+    </div>
 
-  <p>{{ project.shortDescription }}</p>
+    <p>{{ project.shortDescription }}</p>
 
-  <div class="tags">
-    @for (tag of project.tags; track tag) {
-      <span class="tag">{{ tag }}</span>
-    }
-  </div>
-</button>
+    <div class="tags">
+      @for (tag of project.tags; track tag) {
+        <span class="tag">{{ tag }}</span>
+      }
+    </div>
+  </button>
+
+  @if (adminCanManageContent) {
+    <div class="pill-admin-actions">
+      <button type="button" class="pill-btn edit" aria-label="Edit project" (click)="requestEdit($event)">
+        <ng-icon name="edit" aria-hidden="true"></ng-icon>
+      </button>
+      <button
+        type="button"
+        class="pill-btn"
+        aria-label="Move project up"
+        [disabled]="!canMoveUp"
+        (click)="requestMove(-1, $event)"
+      >
+        <ng-icon name="arrowUp" aria-hidden="true"></ng-icon>
+      </button>
+      <button
+        type="button"
+        class="pill-btn"
+        aria-label="Move project down"
+        [disabled]="!canMoveDown"
+        (click)="requestMove(1, $event)"
+      >
+        <ng-icon name="arrowDown" aria-hidden="true"></ng-icon>
+      </button>
+    </div>
+  }
+
+  @if (adminCanManagePublication) {
+    <label class="publish-toggle" (click)="$event.stopPropagation()">
+      <input
+        type="checkbox"
+        [checked]="project.isPublished"
+        [disabled]="publicationUpdatePending"
+        [attr.aria-label]="'Toggle publish status for ' + project.title"
+        (change)="updatePublication($event)"
+      />
+    </label>
+  }
+</article>

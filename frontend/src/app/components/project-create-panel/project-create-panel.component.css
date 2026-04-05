@@ -1,0 +1,72 @@
+@import '../project-admin/project-admin-shared.css';
+
+.page-error {
+  margin: 0.5rem 0 1rem;
+  color: var(--error);
+}
+
+.admin-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft));
+  padding: 0.9rem;
+}
+
+.admin-card-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.admin-card-header p {
+  margin: 0.35rem 0 0.8rem;
+  color: var(--text-soft);
+}
+
+.image-upload-actions {
+  display: grid;
+}
+
+.queued-images {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.queued-image-row {
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem;
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-soft));
+}
+
+.queued-image-row img {
+  width: 92px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.queued-image-fields {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.status-message {
+  color: var(--success);
+  margin: 0.5rem 0 0;
+}
+
+@media (max-width: 760px) {
+  .queued-image-row {
+    grid-template-columns: 1fr;
+  }
+
+  .queued-image-row img {
+    width: 100%;
+    height: 140px;
+  }
+}

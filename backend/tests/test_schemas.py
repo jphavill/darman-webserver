@@ -5,7 +5,13 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from schemas import PhotoBatchUpsertRequest, SprintCreateRequest, SprintListResponse, SprintRow
+from schemas import (
+    PhotoBatchUpsertRequest,
+    ProjectCreateRequest,
+    SprintCreateRequest,
+    SprintListResponse,
+    SprintRow,
+)
 
 
 def test_sprint_create_request_accepts_valid_payload():
@@ -69,3 +75,15 @@ def test_photo_batch_upsert_request_accepts_valid_payload():
     )
 
     assert len(payload.rows) == 1
+
+
+def test_project_create_request_accepts_links():
+    payload = ProjectCreateRequest(
+        title="Demo",
+        short_description="Short",
+        long_description_md="Long",
+        type="software",
+        is_published=False,
+        links=[{"type": "github", "label": "Repo", "url": "https://github.com/example/repo"}],
+    )
+    assert payload.links[0].type == "github"

@@ -1,9 +1,12 @@
 import {
   lucideArrowLeftRight,
+  lucideArrowDown,
+  lucideArrowUp,
   lucideCalendar,
   lucideExpand,
   lucideGithub,
   lucideLink,
+  lucidePencil,
   lucideRotateCcw,
   lucideTable,
   lucideX
@@ -19,5 +22,8 @@ export const appIcons = {
   fullscreen: lucideExpand,
   close: lucideX,
   github: lucideGithub,
-  link: lucideLink
+  link: lucideLink,
+  arrowUp: lucideArrowUp,
+  arrowDown: lucideArrowDown,
+  edit: lucidePencil
 };

@@ -21,6 +21,14 @@ class Settings:
     rate_limit_max_requests: int
     rate_limit_trust_proxy: bool
     rate_limit_ip_header: str
+    media_root_path: str
+    projects_media_subdir: str
+    projects_thumb_width: int
+    projects_full_max_width: int
+    projects_thumb_webp_quality: int
+    projects_full_webp_quality: int
+    projects_max_image_pixels: int
+    projects_max_upload_bytes: int
 
 
 def _parse_csv(value: str) -> list[str]:
@@ -65,4 +73,12 @@ def get_settings() -> Settings:
             default=False,
         ),
         rate_limit_ip_header=os.getenv("RATE_LIMIT_IP_HEADER", "CF-Connecting-IP"),
+        media_root_path=os.getenv("MEDIA_ROOT_PATH", "/app/media"),
+        projects_media_subdir=os.getenv("PROJECTS_MEDIA_SUBDIR", "projects"),
+        projects_thumb_width=int(os.getenv("PROJECTS_THUMB_WIDTH", "640")),
+        projects_full_max_width=int(os.getenv("PROJECTS_FULL_MAX_WIDTH", "1600")),
+        projects_thumb_webp_quality=int(os.getenv("PROJECTS_THUMB_WEBP_QUALITY", "80")),
+        projects_full_webp_quality=int(os.getenv("PROJECTS_FULL_WEBP_QUALITY", "86")),
+        projects_max_image_pixels=int(os.getenv("PROJECTS_MAX_IMAGE_PIXELS", "40000000")),
+        projects_max_upload_bytes=int(os.getenv("PROJECTS_MAX_UPLOAD_BYTES", "104857600")),
     )

@@ -56,6 +56,8 @@ class SprintListResponse(BaseModel):
 SortDirection = Literal["asc", "desc"]
 SprintSortBy = Literal["name", "sprint_time_ms", "sprint_date", "location", "created_at"]
 BestSortBy = Literal["name", "best_time_ms", "sprint_date", "location", "updated_at"]
+ProjectType = Literal["software", "physical"]
+ProjectLinkType = Literal["github", "website", "cults3d", "other"]
 TextFilterType = Literal[
     "contains",
     "notContains",
@@ -221,9 +223,100 @@ class PhotoListQuery(BaseModel):
     include_unpublished: bool = Field(default=False)
 
 
+class ProjectLinkInput(BaseModel):
+    type: ProjectLinkType
+    label: str = Field(min_length=1, max_length=120)
+    url: str = Field(min_length=1, max_length=500)
+
+
+class ProjectLinkRow(BaseModel):
+    id: UUID
+    type: ProjectLinkType
+    label: str
+    url: str
+    sort_order: int
+
+
+class ProjectImageRow(BaseModel):
+    id: UUID
+    thumb_url: str
+    full_url: str
+    alt_text: str
+    caption: str | None
+    sort_order: int
+    is_hero: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProjectRow(BaseModel):
+    id: UUID
+    title: str
+    short_description: str
+    long_description_md: str
+    type: ProjectType
+    is_published: bool
+    sort_order: int
+    links: list[ProjectLinkRow]
+    images: list[ProjectImageRow]
+    tags: list[str] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProjectListResponse(BaseModel):
+    rows: list[ProjectRow]
+    total: int
+
+
+class ProjectListQuery(BaseModel):
+    type: ProjectType | None = None
+    include_unpublished: bool = Field(default=False)
+
+
+class ProjectCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    short_description: str = Field(min_length=1, max_length=500)
+    long_description_md: str = Field(min_length=1)
+    type: ProjectType
+    is_published: bool = Field(default=False)
+    links: list[ProjectLinkInput] = Field(default_factory=list)
+
+
+class ProjectUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    short_description: str | None = Field(default=None, min_length=1, max_length=500)
+    long_description_md: str | None = Field(default=None, min_length=1)
+    type: ProjectType | None = None
+    is_published: bool | None = None
+    links: list[ProjectLinkInput] | None = None
+
+
+class ProjectReorderRequest(BaseModel):
+    type: ProjectType
+    project_ids: list[UUID] = Field(min_length=1)
+
+
+class ProjectImageReorderRequest(BaseModel):
+    image_ids: list[UUID] = Field(min_length=1)
+
+
+class ProjectImageUploadRequest(BaseModel):
+    alt_text: str = Field(min_length=1, max_length=240)
+    caption: str | None = Field(default=None, max_length=2000)
+    is_hero: bool = Field(default=False)
+
+
+class ProjectImageUpdateRequest(BaseModel):
+    is_hero: bool | None = None
+
+
 class AdminFeatureFlags(BaseModel):
     photos_view_unpublished: bool = True
     photos_manage_publication: bool = True
+    projects_view_unpublished: bool = True
+    projects_manage_publication: bool = True
+    projects_manage_content: bool = True
 
 
 class AdminSessionResponse(BaseModel):

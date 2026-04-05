@@ -1,34 +1,65 @@
-
-import { Component, HostListener, OnDestroy, SecurityContext, inject, DOCUMENT } from '@angular/core';
+import { Component, DOCUMENT, HostListener, OnDestroy, SecurityContext, ViewChild, computed, inject, signal } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { marked } from 'marked';
-import { physicalProjects, softwareProjects } from '../../data/projects.data';
-import { Project, ProjectOpenRequest } from '../../models/project.model';
+import { ProjectCreatePanelComponent, ProjectCreateRequestedEvent } from '../../components/project-create-panel/project-create-panel.component';
+import {
+  ProjectEditModalComponent,
+  ProjectEditSaveRequestedEvent,
+  ProjectEditUploadRequestedEvent
+} from '../../components/project-edit-modal/project-edit-modal.component';
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { ProjectOverlayComponent } from '../../components/project-overlay/project-overlay.component';
 import { ProjectSectionComponent } from '../../components/project-section/project-section.component';
 import { WINDOW } from '../../core/browser/browser-globals';
+import { Project, ProjectImage, ProjectOpenRequest } from '../../models/project.model';
+import { ProjectAdminFacadeService } from '../../services/project-admin-facade.service';
 
 @Component({
-    selector: 'app-home-page',
-    imports: [SiteHeaderComponent, ProjectSectionComponent, SiteFooterComponent, ProjectOverlayComponent],
-    templateUrl: './home-page.component.html',
-    styleUrls: ['./home-page.component.css']
+  selector: 'app-home-page',
+  imports: [
+    SiteHeaderComponent,
+    ProjectSectionComponent,
+    SiteFooterComponent,
+    ProjectOverlayComponent,
+    ProjectCreatePanelComponent,
+    ProjectEditModalComponent
+  ],
+  templateUrl: './home-page.component.html',
+  styleUrls: ['./home-page.component.css']
 })
 export class HomePageComponent implements OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly window = inject(WINDOW);
   private readonly document = inject(DOCUMENT);
+  private readonly projectAdmin = inject(ProjectAdminFacadeService);
 
-  readonly softwareProjects = softwareProjects;
-  readonly physicalProjects = physicalProjects;
+  @ViewChild(ProjectCreatePanelComponent) createPanel: ProjectCreatePanelComponent | null = null;
+
+  readonly softwareProjects = this.projectAdmin.softwareProjects;
+  readonly physicalProjects = this.projectAdmin.physicalProjects;
+  readonly errorMessage = this.projectAdmin.errorMessage;
+  readonly adminStatusMessage = this.projectAdmin.adminStatusMessage;
+  readonly canManageProjectContent = this.projectAdmin.canManageProjectContent;
+  readonly canManageProjectPublication = this.projectAdmin.canManageProjectPublication;
+  readonly canManageProjects = this.projectAdmin.canManageProjects;
+  readonly pendingProjectPublicationUpdates = this.projectAdmin.pendingProjectPublicationUpdates;
+  readonly allProjects = this.projectAdmin.allProjects;
 
   overlayVisible = false;
   isExpanded = false;
   activeProject: Project | null = null;
   activeProjectMarkdown = '';
   expandedStyle: Record<string, string> = {};
+  adminPanelOpen = false;
+  editingProjectId = signal<string | null>(null);
+  readonly editingProject = computed(() => {
+    const projectId = this.editingProjectId();
+    if (!projectId) {
+      return null;
+    }
+    return this.allProjects().find((project) => project.id === projectId) ?? null;
+  });
 
   private originRect: DOMRect | null = null;
   private openTrigger: HTMLElement | null = null;
@@ -76,15 +107,132 @@ export class HomePageComponent implements OnDestroy {
     }, this.animationMs);
   }
 
+  toggleAdminPanel(): void {
+    this.adminPanelOpen = !this.adminPanelOpen;
+    this.projectAdmin.errorMessage.set('');
+    this.projectAdmin.adminStatusMessage.set('');
+
+    if (!this.adminPanelOpen) {
+      this.cancelEdit();
+    }
+  }
+
+  async createProject(event: ProjectCreateRequestedEvent): Promise<void> {
+    if (!this.createPanel) {
+      return;
+    }
+
+    this.createPanel.setSubmissionState(true, 'Creating project...');
+    const created = await this.projectAdmin.createProject(event.draft);
+
+    if (!created) {
+      this.createPanel.setSubmissionState(false, '', this.errorMessage());
+      return;
+    }
+
+    const failedIds = new Set<string>();
+    const uploadedImageIds: string[] = [];
+
+    for (let index = 0; index < event.queuedImages.length; index += 1) {
+      const queuedImage = event.queuedImages[index];
+      this.projectAdmin.adminStatusMessage.set(`Uploading image ${index + 1}/${event.queuedImages.length}...`);
+      this.createPanel.setSubmissionState(true, this.projectAdmin.adminStatusMessage());
+
+      const uploadedId = await this.projectAdmin.uploadQueuedImage(created.id, queuedImage);
+      if (uploadedId) {
+        uploadedImageIds.push(uploadedId);
+      } else {
+        failedIds.add(queuedImage.id);
+      }
+    }
+
+    try {
+      await this.projectAdmin.reorderUploadedImages(created.id, uploadedImageIds);
+    } catch {
+      this.projectAdmin.errorMessage.set('Project created, but image ordering failed. You can reorder from Edit.');
+    }
+
+    this.createPanel.clearSuccessfulQueuedImages(failedIds);
+    await this.projectAdmin.refreshProjects();
+
+    if (failedIds.size > 0) {
+      this.createPanel.resetForm();
+      this.startEditById(created.id);
+      this.projectAdmin.errorMessage.set(
+        `Project created, but ${failedIds.size} image upload(s) failed. Re-upload failed images from Edit.`
+      );
+      this.createPanel.setSubmissionState(false, '', this.projectAdmin.errorMessage());
+      return;
+    }
+
+    this.createPanel.resetForm();
+    this.projectAdmin.adminStatusMessage.set('Project created successfully.');
+    this.createPanel.setSubmissionState(false, this.projectAdmin.adminStatusMessage());
+  }
+
+  startEdit(project: Project): void {
+    this.editingProjectId.set(project.id);
+  }
+
+  cancelEdit(): void {
+    this.editingProjectId.set(null);
+  }
+
+  saveEdit(event: ProjectEditSaveRequestedEvent): void {
+    this.projectAdmin.saveProjectEdit(event);
+  }
+
+  toggleProjectPublication(event: { project: Project; isPublished: boolean }): void {
+    this.projectAdmin.toggleProjectPublication(event);
+  }
+
+  moveProjectFromPill(event: { project: Project; direction: -1 | 1 }): void {
+    this.projectAdmin.moveProject(event.project.type, event.project.id, event.direction);
+  }
+
+  uploadImage(event: ProjectEditUploadRequestedEvent): void {
+    this.projectAdmin.uploadImage(event);
+  }
+
+  setHero(event: { projectId: string; image: ProjectImage }): void {
+    this.projectAdmin.setHero(event.projectId, event.image);
+  }
+
+  moveImage(event: { projectId: string; imageId: string; direction: -1 | 1 }): void {
+    const project = this.projectAdmin.allProjects().find((item) => item.id === event.projectId);
+    if (!project) {
+      return;
+    }
+    this.projectAdmin.moveImage(event.projectId, project, event.imageId, event.direction);
+  }
+
+  deleteImage(event: { projectId: string; imageId: string }): void {
+    this.projectAdmin.deleteImage(event.projectId, event.imageId);
+  }
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.editingProjectId()) {
+      this.cancelEdit();
+      return;
+    }
+
     if (this.overlayVisible) {
       this.closeProject();
     }
   }
 
+  private startEditById(projectId: string): void {
+    const target = this.allProjects().find((project) => project.id === projectId);
+    if (target) {
+      this.startEdit(target);
+    }
+  }
+
   private markdownToHtml(markdown: string): string {
-    const html = marked.parse(markdown) as string;
+    const renderer = new marked.Renderer();
+    renderer.html = () => '';
+    const html = marked.parse(markdown, { renderer, gfm: true }) as string;
     return this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
   }
 
@@ -120,5 +268,6 @@ export class HomePageComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.document.body.classList.remove('overlay-open');
+    this.createPanel?.clearImageQueue();
   }
 }

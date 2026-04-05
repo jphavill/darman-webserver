@@ -56,6 +56,33 @@ Access at:
 - Local: http://localhost
 - Production: `https://$WWW_DOMAIN`
 
+## Project Admin (Create/Edit/Publish)
+
+The home page project sections (`Software Projects` and `Physical Projects`) are now fully API-backed and editable from the UI when logged in as admin.
+
+What you can do in admin mode:
+- Create new projects
+- Edit existing project title/short description/long markdown/type
+- Publish or unpublish projects
+- Reorder projects within each section
+- Upload project images directly from the browser (`jpg`, `jpeg`, `png`, `webp`, `heic`)
+- Set a hero image, reorder gallery images, and delete images
+
+Key behavior and limits:
+- Public users only see published projects
+- Admin users can view unpublished projects
+- Maximum 12 images per project
+- Uploaded images are processed to WebP and stored in `./media/projects`
+- Public URLs are served from `/media/projects/<filename>.webp`
+- Markdown is rendered as basic markdown (raw HTML is not rendered)
+
+How to use it locally:
+1. Start the local stack (`make up` or `docker compose -f docker-compose.local.yml up -d --build`)
+2. Open `http://localhost`
+3. Click your name in the top nav to open admin login
+4. Sign in using `ADMIN_API_TOKEN` from your `.env`
+5. Open `Manage Projects` on the home page
+
 ## Image Hosting (Local Folder via Caddy)
 
 This stack is configured so Caddy serves files from `./media` at the URL path `/media/*`.
