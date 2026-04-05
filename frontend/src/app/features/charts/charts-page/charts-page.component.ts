@@ -65,10 +65,6 @@ export class ChartsPageComponent implements OnInit {
     this.store.onRunnerVisibilityChange(update);
   }
 
-  onClearSelections(): void {
-    this.store.onClearSelections();
-  }
-
   onResetFilters(): void {
     this.store.onResetFilters();
   }

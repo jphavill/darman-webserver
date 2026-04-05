@@ -83,12 +83,18 @@ def test_request_limit_is_per_client_not_per_path(monkeypatch):
 def test_stale_request_keys_are_cleaned_up(monkeypatch):
     clock = {"value": 0.0}
     monkeypatch.setattr(rate_limit.time, "monotonic", lambda: clock["value"])
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
+    monkeypatch.setenv("RATE_LIMIT_MAX_REQUESTS", "1")
+    monkeypatch.setenv("RATE_LIMIT_WINDOW_SECONDS", "1")
+    monkeypatch.setenv("RATE_LIMIT_TRUST_PROXY", "false")
 
-    bucket: dict[str, rate_limit.deque[float]] = {}
-    rate_limit._register_event(bucket=bucket, key="stale", window_seconds=1)
-    assert "stale" in bucket
+    stale = _build_request(client_host="10.0.0.2")
+    fresh = _build_request(client_host="10.0.0.3")
+
+    rate_limit.enforce_request_limit(stale)
+    assert "10.0.0.2" in rate_limit._request_windows
 
     clock["value"] = 2.0
-    rate_limit._check_limit(bucket=bucket, key="stale", limit=1, window_seconds=1, detail="test")
+    rate_limit.enforce_request_limit(fresh)
 
-    assert "stale" not in bucket
+    assert "10.0.0.2" not in rate_limit._request_windows

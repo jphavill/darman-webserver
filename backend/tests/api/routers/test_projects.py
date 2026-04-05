@@ -1,17 +1,9 @@
 from io import BytesIO
 
 
-def _auth_headers(client, token: str) -> dict[str, str]:
-    login = client.post("/v1/system/admin/session", json={"api_key": token})
-    assert login.status_code == 200
-    csrf = login.cookies.get("XSRF-TOKEN")
-    assert csrf
-    return {"X-XSRF-TOKEN": csrf}
-
-
-def test_projects_list_only_returns_published_to_public(client, monkeypatch):
+def test_projects_list_only_returns_published_to_public(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    headers = _auth_headers(client, "secret")
+    headers = admin_auth_headers("secret")
 
     draft = client.post(
         "/v1/projects",
@@ -49,7 +41,7 @@ def test_projects_list_only_returns_published_to_public(client, monkeypatch):
     unauthorized = client.get("/v1/projects?include_unpublished=true")
     assert unauthorized.status_code == 401
 
-    _auth_headers(client, "secret")
+    admin_auth_headers("secret")
     admin_response = client.get("/v1/projects?include_unpublished=true&type=software")
     assert admin_response.status_code == 200
     assert admin_response.json()["total"] == 2
@@ -72,9 +64,9 @@ def test_project_mutations_require_auth(client, monkeypatch):
     assert create.status_code == 401
 
 
-def test_project_reorder_and_publish_toggle(client, monkeypatch):
+def test_project_reorder_and_publish_toggle(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    headers = _auth_headers(client, "secret")
+    headers = admin_auth_headers("secret")
 
     first = client.post(
         "/v1/projects",
@@ -148,9 +140,9 @@ def test_project_reorder_and_publish_toggle(client, monkeypatch):
     assert [row["id"] for row in reordered.json()["rows"]] == [second_id, first_id, third_id]
 
 
-def test_project_image_upload_reorder_and_delete(client, monkeypatch):
+def test_project_image_upload_reorder_and_delete(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    headers = _auth_headers(client, "secret")
+    headers = admin_auth_headers("secret")
 
     monkeypatch.setattr(
         "services.projects._process_uploaded_image",
@@ -211,10 +203,10 @@ def test_project_image_upload_reorder_and_delete(client, monkeypatch):
     assert delete.status_code == 204
 
 
-def test_project_image_upload_rejects_files_over_size_limit(client, monkeypatch):
+def test_project_image_upload_rejects_files_over_size_limit(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     monkeypatch.setenv("PROJECTS_MAX_UPLOAD_BYTES", "4")
-    headers = _auth_headers(client, "secret")
+    headers = admin_auth_headers("secret")
 
     created = client.post(
         "/v1/projects",
@@ -241,9 +233,9 @@ def test_project_image_upload_rejects_files_over_size_limit(client, monkeypatch)
     assert oversized.json()["detail"] == "Uploaded image exceeds configured max size (4 bytes)"
 
 
-def test_project_image_reorder_errors_are_specific(client, monkeypatch):
+def test_project_image_reorder_errors_are_specific(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    headers = _auth_headers(client, "secret")
+    headers = admin_auth_headers("secret")
 
     created = client.post(
         "/v1/projects",

@@ -38,7 +38,6 @@ export class ChartsStore {
   });
 
   private readonly progressionRunWindows = ['all', '10', '20', '50'] as const;
-  private readonly timeRunWindows = ['month', 'year', 'all'] as const;
 
   loadLookups(): void {
     this.patchState({ loading: true, error: null });
@@ -154,11 +153,6 @@ export class ChartsStore {
     );
 
     this.patchState({ selectedRunners });
-    this.persistPreferences();
-  }
-
-  onClearSelections(): void {
-    this.patchState({ selectedRunners: [], series: [] });
     this.persistPreferences();
   }
 
@@ -279,7 +273,7 @@ export class ChartsStore {
       return this.isProgressionRunWindow(runWindow) ? runWindow : 'all';
     }
 
-    return this.isTimeRunWindow(runWindow) ? runWindow : 'month';
+    return 'all';
   }
 
   private getProgressionRunWindow(runWindow: RunWindow): Extract<RunWindow, 'all' | '10' | '20' | '50'> {
@@ -288,9 +282,5 @@ export class ChartsStore {
 
   private isProgressionRunWindow(runWindow: RunWindow): runWindow is Extract<RunWindow, 'all' | '10' | '20' | '50'> {
     return this.progressionRunWindows.includes(runWindow as (typeof this.progressionRunWindows)[number]);
-  }
-
-  private isTimeRunWindow(runWindow: RunWindow): runWindow is Extract<RunWindow, 'all' | 'month' | 'year'> {
-    return this.timeRunWindows.includes(runWindow as (typeof this.timeRunWindows)[number]);
   }
 }

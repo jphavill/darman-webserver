@@ -1,43 +1,37 @@
-def _auth_headers(client, token: str) -> dict[str, str]:
-    login = client.post("/v1/system/admin/session", json={"api_key": token})
-    assert login.status_code == 200
-    csrf = login.cookies.get("XSRF-TOKEN")
-    assert csrf
-    return {"X-XSRF-TOKEN": csrf}
-
-
-def _insert_sprint(client, token: str, payload: dict):
+def _insert_sprint(client, admin_auth_headers, token: str, payload: dict):
     return client.post(
         "/v1/sprints",
-        headers=_auth_headers(client, token),
+        headers=admin_auth_headers(token),
         json=payload,
     )
 
 
-def _delete_person(client, token: str, person_id: int):
+def _delete_person(client, admin_auth_headers, token: str, person_id: int):
     return client.delete(
         f"/v1/people/{person_id}",
-        headers=_auth_headers(client, token),
+        headers=admin_auth_headers(token),
     )
 
 
-def _create_person(client, token: str, payload: dict):
+def _create_person(client, admin_auth_headers, token: str, payload: dict):
     return client.post(
         "/v1/people",
-        headers=_auth_headers(client, token),
+        headers=admin_auth_headers(token),
         json=payload,
     )
 
 
-def test_get_people_returns_active_people_alphabetically(client, monkeypatch):
+def test_get_people_returns_active_people_alphabetically(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Zoe", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "Track A"},
     )
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Alex", "sprint_time_ms": 10300, "sprint_date": "2026-03-01", "location": "Track B"},
     )
@@ -48,20 +42,23 @@ def test_get_people_returns_active_people_alphabetically(client, monkeypatch):
     assert [row["name"] for row in body] == ["Alex", "Zoe"]
 
 
-def test_get_people_prefix_filters_by_normalized_name(client, monkeypatch):
+def test_get_people_prefix_filters_by_normalized_name(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Jason", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "Track A"},
     )
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Jared", "sprint_time_ms": 10300, "sprint_date": "2026-03-01", "location": "Track B"},
     )
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Blake", "sprint_time_ms": 10400, "sprint_date": "2026-03-01", "location": "Track C"},
     )
@@ -91,10 +88,10 @@ def test_post_people_requires_auth(client, monkeypatch):
     assert response.status_code == 401
 
 
-def test_post_people_creates_person(client, monkeypatch):
+def test_post_people_creates_person(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
 
-    created = _create_person(client, "secret", {"name": "Alex"})
+    created = _create_person(client, admin_auth_headers, "secret", {"name": "Alex"})
     assert created.status_code == 200
     assert created.json()["name"] == "Alex"
 
@@ -103,18 +100,18 @@ def test_post_people_creates_person(client, monkeypatch):
     assert len(response.json()) == 1
 
 
-def test_post_people_is_idempotent_for_existing_name(client, monkeypatch):
+def test_post_people_is_idempotent_for_existing_name(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
 
-    first = _create_person(client, "secret", {"name": "  JaSon   Doe "})
-    second = _create_person(client, "secret", {"name": "jason doe"})
+    first = _create_person(client, admin_auth_headers, "secret", {"name": "  JaSon   Doe "})
+    second = _create_person(client, admin_auth_headers, "secret", {"name": "jason doe"})
 
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
 
 
-def test_post_people_reactivates_inactive_person(client, monkeypatch, db_session):
+def test_post_people_reactivates_inactive_person(client, monkeypatch, db_session, admin_auth_headers):
     from models import Person
 
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
@@ -122,7 +119,7 @@ def test_post_people_reactivates_inactive_person(client, monkeypatch, db_session
     db_session.add(inactive)
     db_session.commit()
 
-    created = _create_person(client, "secret", {"name": "alex"})
+    created = _create_person(client, admin_auth_headers, "secret", {"name": "alex"})
     assert created.status_code == 200
     assert created.json()["id"] == inactive.id
 
@@ -131,10 +128,11 @@ def test_post_people_reactivates_inactive_person(client, monkeypatch, db_session
     assert len(response.json()) == 1
 
 
-def test_delete_person_requires_auth(client, monkeypatch):
+def test_delete_person_requires_auth(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Alex", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "Track A"},
     )
@@ -145,21 +143,23 @@ def test_delete_person_requires_auth(client, monkeypatch):
     assert response.status_code == 401
 
 
-def test_delete_person_cascades_to_sprint_entries(client, monkeypatch):
+def test_delete_person_cascades_to_sprint_entries(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Alex", "sprint_time_ms": 10200, "sprint_date": "2026-03-01", "location": "Track A"},
     )
     _insert_sprint(
         client,
+        admin_auth_headers,
         "secret",
         {"name": "Alex", "sprint_time_ms": 10100, "sprint_date": "2026-03-02", "location": "Track B"},
     )
     person_id = client.get("/v1/people", params={"q": "alex"}).json()[0]["id"]
 
-    deleted = _delete_person(client, "secret", person_id)
+    deleted = _delete_person(client, admin_auth_headers, "secret", person_id)
     assert deleted.status_code == 204
 
     people_response = client.get("/v1/people")

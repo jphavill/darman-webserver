@@ -46,8 +46,8 @@ def list_projects(
         query = query.filter(Project.is_published.is_(True))
 
     query = query.order_by(Project.type.asc(), Project.sort_order.asc(), Project.created_at.asc())
-    total = query.count()
     records = query.all()
+    total = len(records)
     return ProjectListResponse(rows=[_to_project_row(record) for record in records], total=total)
 
 
@@ -73,7 +73,6 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRow:
     _replace_project_links(db=db, project_id=record.id, links=payload.links)
 
     db.commit()
-    db.refresh(record)
     return _fetch_project_row(db=db, project_id=record.id)
 
 
@@ -110,7 +109,6 @@ def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest)
 
     record.updated_at = func.now()
     db.commit()
-    db.refresh(record)
     return _fetch_project_row(db=db, project_id=record.id)
 
 
@@ -146,7 +144,7 @@ def upload_project_image(
         raise NotFoundAppError("Project not found")
 
     if len(content) > settings.projects_max_upload_bytes:
-        raise ValidationAppError(_upload_size_limit_error(settings.projects_max_upload_bytes))
+        raise ValidationAppError(upload_size_limit_error(settings.projects_max_upload_bytes))
 
     existing_count = db.query(ProjectImage).filter(ProjectImage.project_id == project_id).count()
     if existing_count >= MAX_IMAGES_PER_PROJECT:
@@ -374,7 +372,7 @@ def _resolve_media_path_from_url(media_url: str) -> Path | None:
     return candidate
 
 
-def _upload_size_limit_error(max_bytes: int) -> str:
+def upload_size_limit_error(max_bytes: int) -> str:
     return f"Uploaded image exceeds configured max size ({max_bytes} bytes)"
 
 

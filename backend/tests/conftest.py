@@ -138,6 +138,18 @@ def client(db_session) -> Generator[TestClient, None, None]:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture()
+def admin_auth_headers(client: TestClient):
+    def _get(token: str = "secret") -> dict[str, str]:
+        login = client.post("/v1/system/admin/session", json={"api_key": token})
+        assert login.status_code == 200
+        csrf = login.cookies.get("XSRF-TOKEN")
+        assert csrf
+        return {"X-XSRF-TOKEN": csrf}
+
+    return _get
+
+
 @pytest.fixture(autouse=True)
 def admin_cookie_test_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     monkeypatch.setenv("ADMIN_SESSION_COOKIE_SECURE", "false")

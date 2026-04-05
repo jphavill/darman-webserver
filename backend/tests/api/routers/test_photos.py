@@ -2,14 +2,6 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 
-def _auth_headers(client, token: str) -> dict[str, str]:
-    login = client.post("/v1/system/admin/session", json={"api_key": token})
-    assert login.status_code == 200
-    csrf = login.cookies.get("XSRF-TOKEN")
-    assert csrf
-    return {"X-XSRF-TOKEN": csrf}
-
-
 def test_batch_upsert_requires_csrf(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     login = client.post("/v1/system/admin/session", json={"api_key": "secret"})
@@ -57,11 +49,11 @@ def test_batch_upsert_photos_requires_auth(client, monkeypatch):
     assert response.status_code == 401
 
 
-def test_batch_upsert_and_list_photos(client, monkeypatch):
+def test_batch_upsert_and_list_photos(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     visible_id = uuid4()
     hidden_id = uuid4()
-    auth_headers = _auth_headers(client, "secret")
+    auth_headers = admin_auth_headers("secret")
 
     response = client.post(
         "/v1/photos/batch-upsert",
@@ -103,7 +95,7 @@ def test_batch_upsert_and_list_photos(client, monkeypatch):
     unauthorized_hidden = client.get("/v1/photos?include_unpublished=true")
     assert unauthorized_hidden.status_code == 401
 
-    _auth_headers(client, "secret")
+    admin_auth_headers("secret")
 
     admin_listed = client.get(
         "/v1/photos?include_unpublished=true",
@@ -114,9 +106,9 @@ def test_batch_upsert_and_list_photos(client, monkeypatch):
     assert {row["id"] for row in admin_body["rows"]} == {str(visible_id), str(hidden_id)}
 
 
-def test_batch_upsert_photos_validates_uuid(client, monkeypatch):
+def test_batch_upsert_photos_validates_uuid(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    auth_headers = _auth_headers(client, "secret")
+    auth_headers = admin_auth_headers("secret")
     response = client.post(
         "/v1/photos/batch-upsert",
         headers=auth_headers,
@@ -161,10 +153,10 @@ def test_delete_photo_requires_auth(client, monkeypatch):
     assert response.status_code == 401
 
 
-def test_update_and_delete_photo_by_id(client, monkeypatch):
+def test_update_and_delete_photo_by_id(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     photo_id = uuid4()
-    auth_headers = _auth_headers(client, "secret")
+    auth_headers = admin_auth_headers("secret")
 
     create_response = client.post(
         "/v1/photos/batch-upsert",
@@ -222,10 +214,10 @@ def test_update_and_delete_photo_by_id(client, monkeypatch):
     assert delete_response.status_code == 204
 
 
-def test_update_photo_supports_partial_updates(client, monkeypatch):
+def test_update_photo_supports_partial_updates(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     photo_id = uuid4()
-    auth_headers = _auth_headers(client, "secret")
+    auth_headers = admin_auth_headers("secret")
 
     create_response = client.post(
         "/v1/photos/batch-upsert",
@@ -261,10 +253,10 @@ def test_update_photo_supports_partial_updates(client, monkeypatch):
     assert update_body["is_published"] is False
 
 
-def test_update_and_delete_photo_return_404_for_missing_id(client, monkeypatch):
+def test_update_and_delete_photo_return_404_for_missing_id(client, monkeypatch, admin_auth_headers):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     missing_id = uuid4()
-    auth_headers = _auth_headers(client, "secret")
+    auth_headers = admin_auth_headers("secret")
 
     update_response = client.post(
         f"/v1/photos/{missing_id}",

@@ -11,7 +11,7 @@ from core.settings import get_settings
 
 _lock = Lock()
 _request_windows: dict[str, deque[float]] = {}
-_bucket_last_sweep_by_id: dict[int, float] = {}
+_last_request_windows_sweep: float | None = None
 
 
 def _extract_first_valid_ip(value: str | None) -> str | None:
@@ -67,29 +67,11 @@ def _get_entries_for_update(*, bucket: dict[str, deque[float]], key: str, now: f
     return entries
 
 
-def _get_entries_for_check(
-    *,
-    bucket: dict[str, deque[float]],
-    key: str,
-    now: float,
-    window_seconds: int,
-) -> deque[float] | None:
-    entries = bucket.get(key)
-    if entries is None:
-        return None
-
-    _prune_window(entries, now, window_seconds)
-    if not entries:
-        bucket.pop(key, None)
-        return None
-
-    return entries
-
-
 def _maybe_sweep_bucket(*, bucket: dict[str, deque[float]], now: float, window_seconds: int) -> None:
-    bucket_id = id(bucket)
+    global _last_request_windows_sweep
+
     interval = max(1, min(window_seconds, 30))
-    last_sweep = _bucket_last_sweep_by_id.get(bucket_id)
+    last_sweep = _last_request_windows_sweep
     if last_sweep is not None and now - last_sweep < interval:
         return
 
@@ -102,7 +84,7 @@ def _maybe_sweep_bucket(*, bucket: dict[str, deque[float]], now: float, window_s
         if not entries:
             bucket.pop(key, None)
 
-    _bucket_last_sweep_by_id[bucket_id] = now
+    _last_request_windows_sweep = now
 
 
 def _enforce_limit(
@@ -122,37 +104,6 @@ def _enforce_limit(
         entries.append(now)
 
 
-def _check_limit(
-    *,
-    bucket: dict[str, deque[float]],
-    key: str,
-    limit: int,
-    window_seconds: int,
-    detail: str,
-) -> None:
-    now = time.monotonic()
-    with _lock:
-        _maybe_sweep_bucket(bucket=bucket, now=now, window_seconds=window_seconds)
-        entries = _get_entries_for_check(bucket=bucket, key=key, now=now, window_seconds=window_seconds)
-        if entries is None:
-            return
-        if len(entries) >= limit:
-            raise TooManyRequestsAppError(detail)
-
-
-def _register_event(
-    *,
-    bucket: dict[str, deque[float]],
-    key: str,
-    window_seconds: int,
-) -> None:
-    now = time.monotonic()
-    with _lock:
-        _maybe_sweep_bucket(bucket=bucket, now=now, window_seconds=window_seconds)
-        entries = _get_entries_for_update(bucket=bucket, key=key, now=now, window_seconds=window_seconds)
-        entries.append(now)
-
-
 def enforce_request_limit(request: Request) -> None:
     settings = get_settings()
     if not settings.rate_limit_enabled:
@@ -169,6 +120,8 @@ def enforce_request_limit(request: Request) -> None:
 
 
 def clear_rate_limit_state() -> None:
+    global _last_request_windows_sweep
+
     with _lock:
         _request_windows.clear()
-        _bucket_last_sweep_by_id.clear()
+        _last_request_windows_sweep = None

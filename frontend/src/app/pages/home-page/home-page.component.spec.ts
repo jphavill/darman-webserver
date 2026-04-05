@@ -119,7 +119,7 @@ describe('HomePageComponent', () => {
     expect(document.body.classList.contains('overlay-open')).toBe(false);
   });
 
-  it('exposes admin controls only with project management flag', () => {
+  it('exposes content admin controls only with project content flag', () => {
     const authState = new AdminAuthStateService();
 
     TestBed.configureTestingModule({
@@ -130,7 +130,7 @@ describe('HomePageComponent', () => {
     });
 
     const component = TestBed.runInInjectionContext(() => new HomePageComponent());
-    expect(component.canManageProjects()).toBe(false);
+    expect(component.canManageProjectContent()).toBe(false);
 
     authState.setSession({
       photosViewUnpublished: true,
@@ -140,7 +140,7 @@ describe('HomePageComponent', () => {
       projectsManageContent: true
     });
 
-    expect(component.canManageProjects()).toBe(true);
+    expect(component.canManageProjectContent()).toBe(true);
   });
 
   it('clears create form and opens edit mode when uploads partially fail', async () => {

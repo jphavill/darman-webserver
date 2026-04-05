@@ -73,10 +73,6 @@ export class PhotosPageComponent implements OnDestroy {
     this.window.open(this.activePhoto.fullUrl, '_blank', 'noopener,noreferrer');
   }
 
-  trackByPhoto(index: number, photo: Photo): string {
-    return photo.id;
-  }
-
   isUpdatingPhoto(photoId: string): boolean {
     return this.pendingPhotoUpdates().has(photoId);
   }

@@ -12,7 +12,6 @@ from models import AdminSession
 class CreatedAdminSession:
     session_token: str
     csrf_token: str
-    expires_at: datetime
 
 
 def _hash_token(raw_value: str) -> str:
@@ -36,7 +35,6 @@ def create_admin_session(db: Session, ttl_seconds: int) -> CreatedAdminSession:
     return CreatedAdminSession(
         session_token=session_token,
         csrf_token=csrf_token,
-        expires_at=expires_at,
     )
 
 

@@ -36,7 +36,6 @@ export class ChartsControlsComponent {
   @Output() readonly removeRunner = new EventEmitter<number>();
   @Output() readonly runnerColorChange = new EventEmitter<{ personId: number; color: string }>();
   @Output() readonly runnerVisibilityChange = new EventEmitter<{ personId: number; visible: boolean }>();
-  @Output() readonly clearSelections = new EventEmitter<void>();
   @Output() readonly resetFilters = new EventEmitter<void>();
 
   readonly modeOptions: Array<{ value: ComparisonMode; label: string }> = [
@@ -51,14 +50,11 @@ export class ChartsControlsComponent {
     { value: '50', label: 'Last 50' }
   ];
 
-  readonly timeRunWindowOptions: Array<{ value: RunWindow; label: string }> = [
-    { value: 'month', label: 'Month' },
-    { value: 'year', label: 'Year' },
-    { value: 'all', label: 'All Time' }
-  ];
-
   get runWindowOptions(): Array<{ value: RunWindow; label: string }> {
-    return this.mode === 'progression' ? this.progressionRunWindowOptions : this.timeRunWindowOptions;
+    if (this.mode === 'progression') {
+      return this.progressionRunWindowOptions;
+    }
+    return [{ value: 'all', label: 'All Time' }];
   }
 
   get selectedPersonIds(): number[] {

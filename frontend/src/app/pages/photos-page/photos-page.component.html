@@ -8,7 +8,7 @@
   }
 
   <div class="photo-masonry">
-    @for (photo of photos; track trackByPhoto($index, photo)) {
+    @for (photo of photos; track photo.id) {
       <article class="photo-tile" [class.unpublished]="!photo.isPublished">
         <button class="photo-open-btn" type="button" (click)="openPhoto(photo, $event)" [attr.aria-label]="'Open photo: ' + photo.altText">
           <img [src]="photo.thumbUrl" [alt]="photo.altText" loading="lazy" decoding="async" (load)="onThumbLoad($event, photo)" />

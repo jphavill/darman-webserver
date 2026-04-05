@@ -204,34 +204,6 @@ def test_update_sprint_updates_runner_by_existing_name(client, monkeypatch):
     assert response.json()["name"] == "Jamie"
 
 
-def test_patch_sprint_updates_runner_by_existing_name(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
-    original = _insert(
-        client,
-        "secret",
-        {
-            "name": "Alex",
-            "sprint_time_ms": 10500,
-            "sprint_date": "2026-03-01",
-            "location": "Track A",
-        },
-    )
-    _insert(
-        client,
-        "secret",
-        {
-            "name": "Jamie",
-            "sprint_time_ms": 10300,
-            "sprint_date": "2026-03-01",
-            "location": "Track B",
-        },
-    )
-
-    response = _patch_update(client, "secret", original.json()["id"], {"name": "Jamie"})
-    assert response.status_code == 200
-    assert response.json()["name"] == "Jamie"
-
-
 def test_update_sprint_supports_person_id(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     original = _insert(

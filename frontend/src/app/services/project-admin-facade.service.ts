@@ -13,7 +13,6 @@ export class ProjectAdminFacadeService {
 
   readonly canManageProjectContent = computed(() => this.adminAuthState.can('projectsManageContent'));
   readonly canManageProjectPublication = computed(() => this.adminAuthState.can('projectsManagePublication'));
-  readonly canManageProjects = computed(() => this.canManageProjectContent() || this.canManageProjectPublication());
   readonly includeUnpublished = computed(() => this.adminAuthState.can('projectsViewUnpublished'));
 
   readonly softwareProjects = signal<Project[]>([]);
@@ -30,8 +29,7 @@ export class ProjectAdminFacadeService {
     const subscription = this.projectApi.getProjects(undefined, includeUnpublished).subscribe({
       next: (response) => {
         this.errorMessage.set('');
-        this.softwareProjects.set(response.rows.filter((project) => project.type === 'software'));
-        this.physicalProjects.set(response.rows.filter((project) => project.type === 'physical'));
+        this.applyProjects(response.rows);
       },
       error: () => {
         this.softwareProjects.set([]);
@@ -48,8 +46,7 @@ export class ProjectAdminFacadeService {
   async refreshProjects(): Promise<void> {
     try {
       const response = await firstValueFrom(this.projectApi.getProjects(undefined, this.includeUnpublished()));
-      this.softwareProjects.set(response.rows.filter((project) => project.type === 'software'));
-      this.physicalProjects.set(response.rows.filter((project) => project.type === 'physical'));
+      this.applyProjects(response.rows);
       this.errorMessage.set('');
     } catch {
       this.errorMessage.set('Unable to load projects right now.');
@@ -156,15 +153,10 @@ export class ProjectAdminFacadeService {
 
   moveProject(type: 'software' | 'physical', projectId: string, direction: -1 | 1): void {
     const projects = type === 'software' ? [...this.softwareProjects()] : [...this.physicalProjects()];
-    const currentIndex = projects.findIndex((project) => project.id === projectId);
-    const nextIndex = currentIndex + direction;
-
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= projects.length) {
+    const nextProjects = this.moveItemById(projects, projectId, direction, (project) => project.id);
+    if (nextProjects === null) {
       return;
     }
-
-    const nextProjects = [...projects];
-    [nextProjects[currentIndex], nextProjects[nextIndex]] = [nextProjects[nextIndex], nextProjects[currentIndex]];
 
     this.projectApi.reorderProjects(type, nextProjects.map((project) => project.id)).subscribe({
       next: () => this.refreshProjects(),
@@ -212,15 +204,10 @@ export class ProjectAdminFacadeService {
   }
 
   moveImage(projectId: string, project: Project, imageId: string, direction: -1 | 1): void {
-    const images = [...project.images];
-    const currentIndex = images.findIndex((image) => image.id === imageId);
-    const nextIndex = currentIndex + direction;
-
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= images.length) {
+    const images = this.moveItemById(project.images, imageId, direction, (image) => image.id);
+    if (images === null) {
       return;
     }
-
-    [images[currentIndex], images[nextIndex]] = [images[nextIndex], images[currentIndex]];
 
     this.projectApi.reorderProjectImages(projectId, images.map((image) => image.id)).subscribe({
       next: () => this.refreshProjects(),
@@ -254,5 +241,22 @@ export class ProjectAdminFacadeService {
   private defaultAltText(filename: string): string {
     const stem = filename.replace(/\.[^.]+$/, '');
     return stem.replace(/[_-]+/g, ' ').trim() || 'Project image';
+  }
+
+  private applyProjects(projects: Project[]): void {
+    this.softwareProjects.set(projects.filter((project) => project.type === 'software'));
+    this.physicalProjects.set(projects.filter((project) => project.type === 'physical'));
+  }
+
+  private moveItemById<T>(items: T[], id: string, direction: -1 | 1, getId: (item: T) => string): T[] | null {
+    const currentIndex = items.findIndex((item) => getId(item) === id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= items.length) {
+      return null;
+    }
+
+    const nextItems = [...items];
+    [nextItems[currentIndex], nextItems[nextIndex]] = [nextItems[nextIndex], nextItems[currentIndex]];
+    return nextItems;
   }
 }

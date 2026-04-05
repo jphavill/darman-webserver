@@ -53,8 +53,6 @@ describe('ChartsControlsComponent', () => {
 
     component.mode = 'daily_best';
     expect(component.runWindowOptions).toEqual([
-      { value: 'month', label: 'Month' },
-      { value: 'year', label: 'Year' },
       { value: 'all', label: 'All Time' }
     ]);
   });

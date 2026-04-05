@@ -3,7 +3,7 @@ from itertools import groupby
 from sqlalchemy.orm import Session
 
 from core.errors import ValidationAppError
-from core.text import collapse_whitespace
+from core.text import normalize_optional_text
 from models import Person, SprintEntry
 from schemas import (
     ComparisonMode,
@@ -36,7 +36,7 @@ def list_sprint_comparison(
 
     person_name_by_id = {person.id: person.name for person in people}
     sorted_people = sorted(unique_person_ids, key=lambda person_id: person_name_by_id[person_id].casefold())
-    normalized_location = _normalize_optional_text(location)
+    normalized_location = normalize_optional_text(location)
 
     series = [
         _build_progression_series(
@@ -62,15 +62,6 @@ def list_sprint_comparison(
         run_window=run_window,
         series=series,
     )
-
-
-def _normalize_optional_text(value: str | None) -> str | None:
-    if value is None:
-        return None
-    normalized = collapse_whitespace(value)
-    return normalized or None
-
-
 def _build_progression_series(
     db: Session,
     person_id: int,

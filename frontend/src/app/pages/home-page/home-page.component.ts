@@ -42,7 +42,6 @@ export class HomePageComponent implements OnDestroy {
   readonly adminStatusMessage = this.projectAdmin.adminStatusMessage;
   readonly canManageProjectContent = this.projectAdmin.canManageProjectContent;
   readonly canManageProjectPublication = this.projectAdmin.canManageProjectPublication;
-  readonly canManageProjects = this.projectAdmin.canManageProjects;
   readonly pendingProjectPublicationUpdates = this.projectAdmin.pendingProjectPublicationUpdates;
   readonly allProjects = this.projectAdmin.allProjects;
 

@@ -18,7 +18,7 @@ class SprintCreateRequest(BaseModel):
     def validate_person_identity(self) -> "SprintCreateRequest":
         if self.person_id is None and self.name is None:
             raise ValueError("either person_id or name must be provided")
-        if self.name is not None and not _collapse_whitespace(self.name):
+        if self.name is not None and not collapse_whitespace(self.name):
             raise ValueError("name cannot be empty")
         return self
 
@@ -34,7 +34,7 @@ class SprintUpdateRequest(BaseModel):
     def validate_person_identity_update(self) -> "SprintUpdateRequest":
         if self.person_id is not None and self.name is not None:
             raise ValueError("provide either person_id or name, not both")
-        if self.name is not None and not _collapse_whitespace(self.name):
+        if self.name is not None and not collapse_whitespace(self.name):
             raise ValueError("name cannot be empty")
         return self
 
@@ -110,7 +110,7 @@ class PersonCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_name(self) -> "PersonCreateRequest":
-        if not _collapse_whitespace(self.name):
+        if not collapse_whitespace(self.name):
             raise ValueError("name cannot be empty")
         return self
 
@@ -325,7 +325,3 @@ class AdminSessionResponse(BaseModel):
 
 class AdminSessionCreateRequest(BaseModel):
     api_key: str = Field(min_length=1)
-
-
-def _collapse_whitespace(value: str) -> str:
-    return collapse_whitespace(value)

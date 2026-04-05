@@ -27,6 +27,7 @@ from services.projects import (
     list_projects,
     reorder_project_images,
     reorder_projects,
+    upload_size_limit_error,
     update_project,
     update_project_image,
     upload_project_image,
@@ -140,11 +141,7 @@ def _read_upload_content(*, file: UploadFile, max_bytes: int) -> bytes:
             break
         total += len(chunk)
         if total > max_bytes:
-            raise ValidationAppError(_upload_size_limit_error(max_bytes))
+            raise ValidationAppError(upload_size_limit_error(max_bytes))
         chunks.append(chunk)
 
     return b"".join(chunks)
-
-
-def _upload_size_limit_error(max_bytes: int) -> str:
-    return f"Uploaded image exceeds configured max size ({max_bytes} bytes)"

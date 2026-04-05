@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Query, Session
 
-from core.text import collapse_whitespace
+from core.text import normalize_optional_text
 from models import Person, SprintEntry
 from schemas import TextFilterType
 from schemas import BestTimeRow, BestTimesResponse, SprintListResponse, SprintRow
@@ -224,13 +224,6 @@ def _apply_ordering(query: Query, sort_column: Any, sort_dir: str, tie_breaker: 
     return query.order_by(direction, tie_breaker)
 
 
-def _normalize_optional_text(value: str | None) -> str | None:
-    if value is None:
-        return None
-    normalized = collapse_whitespace(value)
-    return normalized or None
-
-
 def _build_text_filter(column: Any, value: str | None, filter_type: TextFilterType) -> Any | None:
     blank_filter = or_(column.is_(None), func.length(func.btrim(column)) == 0)
     if filter_type == "blank":
@@ -238,7 +231,7 @@ def _build_text_filter(column: Any, value: str | None, filter_type: TextFilterTy
     if filter_type == "notBlank":
         return and_(column.is_not(None), func.length(func.btrim(column)) > 0)
 
-    normalized_value = _normalize_optional_text(value)
+    normalized_value = normalize_optional_text(value)
     if not normalized_value:
         return None
 

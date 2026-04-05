@@ -12,11 +12,6 @@ This folder contains scripts for preparing gallery images and syncing metadata t
   - Sorts rows by `kMDItemContentCreationDate` metadata (newest first).
   - Writes `captured_at` as an ISO-8601 timestamp with timezone.
 
-- `migrate-metadata-sort-to-captured.py`
-  - One-time migration for older metadata CSV files that still use `sort_order`.
-  - Replaces `sort_order` with `captured_at` using each file's `kMDItemContentCreationDate` metadata.
-  - Updates the CSV in place and writes a `.bak` backup by default.
-
 - `prepare-gallery-batch.py`
   - Processes many images from one directory.
   - Generates two variants per image:
@@ -51,14 +46,6 @@ Optional flags:
 - `--output-name metadata.csv` to change the output filename (still created in `--input-dir`)
 
 Option B: create CSV manually.
-
-Option C: migrate an older CSV from `sort_order` to `captured_at`:
-
-```bash
-./scripts/migrate-metadata-sort-to-captured.py \
-  --input-dir ~/Pictures/gallery-upload \
-  --metadata ~/Pictures/gallery-upload/metadata.csv
-```
 
 Create a CSV file (for example `metadata.csv`) with this header:
 
