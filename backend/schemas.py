@@ -177,20 +177,6 @@ class SprintComparisonQuery(BaseModel):
         return parsed
 
 
-class PhotoUpsertItem(BaseModel):
-    id: UUID
-    alt_text: str = Field(min_length=1, max_length=240)
-    caption: str = Field(min_length=1)
-    thumb_url: str = Field(min_length=1, max_length=400)
-    full_url: str = Field(min_length=1, max_length=400)
-    captured_at: datetime
-    is_published: bool = Field(default=True)
-
-
-class PhotoBatchUpsertRequest(BaseModel):
-    rows: list[PhotoUpsertItem] = Field(min_length=1)
-
-
 class PhotoUpdateRequest(BaseModel):
     alt_text: Optional[str] = Field(default=None, min_length=1, max_length=240)
     caption: Optional[str] = Field(default=None, min_length=1)
@@ -198,6 +184,14 @@ class PhotoUpdateRequest(BaseModel):
     full_url: Optional[str] = Field(default=None, min_length=1, max_length=400)
     captured_at: Optional[datetime] = None
     is_published: Optional[bool] = None
+
+
+class PhotoUploadRequest(BaseModel):
+    caption: str = Field(min_length=1)
+    alt_text: str | None = Field(default=None, max_length=240)
+    captured_at: datetime | None = None
+    client_last_modified: datetime | None = None
+    is_published: bool = Field(default=True)
 
 
 class PhotoRow(BaseModel):

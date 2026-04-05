@@ -1,12 +1,10 @@
 from datetime import date, datetime
 
-from uuid import uuid4
-
 import pytest
 from pydantic import ValidationError
 
 from schemas import (
-    PhotoBatchUpsertRequest,
+    PhotoUploadRequest,
     ProjectCreateRequest,
     SprintCreateRequest,
     SprintListResponse,
@@ -54,27 +52,29 @@ def test_sprint_list_response_shape():
     assert response.rows[0].name == "Casey"
 
 
-def test_photo_batch_upsert_request_requires_rows():
+def test_photo_upload_request_requires_caption():
     with pytest.raises(ValidationError):
-        PhotoBatchUpsertRequest(rows=[])
+        PhotoUploadRequest(caption="")
 
 
-def test_photo_batch_upsert_request_accepts_valid_payload():
-    payload = PhotoBatchUpsertRequest(
-        rows=[
-            {
-                "id": str(uuid4()),
-                "alt_text": "Bridge at dusk",
-                "caption": "Blue hour",
-                "thumb_url": "/media/gallery/bridge-thumb.webp",
-                "full_url": "/media/gallery/bridge-full.webp",
-                "captured_at": datetime.now().astimezone().isoformat(),
-                "is_published": True,
-            }
-        ]
+def test_photo_upload_request_allows_blank_alt_text():
+    payload = PhotoUploadRequest(caption="Caption", alt_text="", client_last_modified="2026-03-20T02:16:45+00:00")
+    assert payload.caption == "Caption"
+
+
+def test_photo_upload_request_parses_capture_fields_as_datetimes():
+    payload = PhotoUploadRequest(
+        caption="Caption",
+        captured_at="2026-04-05T17:30:00+00:00",
+        client_last_modified="2026-03-20T02:16:45+00:00",
     )
+    assert payload.captured_at is not None
+    assert payload.client_last_modified is not None
 
-    assert len(payload.rows) == 1
+
+def test_photo_upload_request_rejects_invalid_capture_datetime():
+    with pytest.raises(ValidationError):
+        PhotoUploadRequest(caption="Caption", captured_at="not-a-date")
 
 
 def test_project_create_request_accepts_links():

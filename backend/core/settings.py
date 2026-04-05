@@ -29,6 +29,12 @@ class Settings:
     projects_full_webp_quality: int
     projects_max_image_pixels: int
     projects_max_upload_bytes: int
+    photos_media_subdir: str
+    photos_thumb_width: int
+    photos_thumb_webp_quality: int
+    photos_full_webp_quality: int
+    photos_max_image_pixels: int
+    photos_max_upload_bytes: int
 
 
 def _parse_csv(value: str) -> list[str]:
@@ -81,4 +87,10 @@ def get_settings() -> Settings:
         projects_full_webp_quality=int(os.getenv("PROJECTS_FULL_WEBP_QUALITY", "86")),
         projects_max_image_pixels=int(os.getenv("PROJECTS_MAX_IMAGE_PIXELS", "40000000")),
         projects_max_upload_bytes=int(os.getenv("PROJECTS_MAX_UPLOAD_BYTES", "104857600")),
+        photos_media_subdir=os.getenv("PHOTOS_MEDIA_SUBDIR", "gallery"),
+        photos_thumb_width=int(os.getenv("PHOTOS_THUMB_WIDTH", "640")),
+        photos_thumb_webp_quality=int(os.getenv("PHOTOS_THUMB_WEBP_QUALITY", "82")),
+        photos_full_webp_quality=int(os.getenv("PHOTOS_FULL_WEBP_QUALITY", "95")),
+        photos_max_image_pixels=int(os.getenv("PHOTOS_MAX_IMAGE_PIXELS", "40000000")),
+        photos_max_upload_bytes=int(os.getenv("PHOTOS_MAX_UPLOAD_BYTES", "104857600")),
     )

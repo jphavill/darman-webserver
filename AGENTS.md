@@ -9,7 +9,7 @@ Guidance for agentic coding tools in `darman-webserver`.
 ## Repository Structure
 - `backend/` API, services, schemas, DB models, migrations, backend tests.
 - `frontend/` Angular app, services, components, frontend tests.
-- `media/` image artifacts and gallery manifest.
+- `media/` image artifacts served by Caddy.
 - `scripts/` helper scripts for media/gallery workflows.
 - `Makefile` convenience wrappers for Docker commands.
 

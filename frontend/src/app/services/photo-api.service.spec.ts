@@ -74,4 +74,41 @@ describe('PhotoApiService', () => {
       updated_at: '2024-01-02T00:00:00+00:00'
     });
   });
+
+  it('uploads a photo with multipart form data', () => {
+    const file = new File(['abc'], 'sample.jpg', { type: 'image/jpeg' });
+
+    service
+      .uploadPhoto(file, {
+        caption: 'Ridge sunrise',
+        altText: '',
+        capturedAt: '2026-04-05T17:30:00.000Z',
+        clientLastModified: '2026-03-20T02:16:45.000Z',
+        isPublished: false
+      })
+      .subscribe((photo) => {
+        expect(photo.caption).toBe('Ridge sunrise');
+      });
+
+    const request = httpMock.expectOne('/api/v1/photos');
+    expect(request.request.method).toBe('POST');
+    const body = request.request.body as FormData;
+    expect(body.get('caption')).toBe('Ridge sunrise');
+    expect(body.get('alt_text')).toBe('');
+    expect(body.get('captured_at')).toBe('2026-04-05T17:30:00.000Z');
+    expect(body.get('client_last_modified')).toBe('2026-03-20T02:16:45.000Z');
+    expect(body.get('is_published')).toBe('false');
+
+    request.flush({
+      id: 'photo-2',
+      alt_text: 'Ridge sunrise',
+      caption: 'Ridge sunrise',
+      thumb_url: '/thumb-2.webp',
+      full_url: '/full-2.webp',
+      captured_at: '2026-04-05T17:30:00+00:00',
+      is_published: false,
+      created_at: '2026-04-05T17:31:00+00:00',
+      updated_at: '2026-04-05T17:31:00+00:00'
+    });
+  });
 });

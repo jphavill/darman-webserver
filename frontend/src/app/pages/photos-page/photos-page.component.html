@@ -2,6 +2,92 @@
   <h1>Photos</h1>
 </section>
 
+@if (canManagePublication()) {
+  <section class="upload-panel" aria-label="Upload photos">
+    <header class="upload-panel-header">
+      <h2>Upload Photos</h2>
+      <p>Select multiple images, adjust metadata, then upload as a batch.</p>
+    </header>
+
+    <div class="upload-actions">
+      <label class="upload-picker">
+        <span>Add Images</span>
+        <input type="file" accept="image/*,.heic,.tif,.tiff,.avif" multiple [disabled]="!canQueueMoreUploads() || isBatchUploadRunning()" (change)="onUploadSelection($event)" />
+      </label>
+      <div class="upload-actions-right">
+        <button type="button" class="upload-run-btn" [disabled]="!canStartUploadBatch() || isBatchUploadRunning()" (click)="uploadQueuedPhotos()">
+          @if (isBatchUploadRunning()) {
+            Uploading...
+          } @else {
+            Upload All
+          }
+        </button>
+        <button type="button" class="upload-clear-btn" [disabled]="isBatchUploadRunning()" (click)="clearCompletedUploads()">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    @if (uploadStatusMessage) {
+      <p class="upload-status-message">{{ uploadStatusMessage }}</p>
+    }
+
+    @if (queuedUploads.length > 0) {
+      <ul class="upload-queue">
+        @for (upload of queuedUploads; track upload.id) {
+          <li class="upload-queue-item" [class.uploaded]="upload.status === 'uploaded'" [class.failed]="upload.status === 'failed'">
+            <img [src]="upload.previewUrl" [alt]="upload.caption || upload.file.name" loading="lazy" decoding="async" />
+
+            <div class="upload-queue-fields">
+              <p class="upload-file-name">{{ upload.file.name }}</p>
+
+              <label>
+                <span>Caption</span>
+                <input type="text" [(ngModel)]="upload.caption" [disabled]="isBatchUploadRunning()" />
+              </label>
+
+              <label>
+                <span>Alt text (optional)</span>
+                <input type="text" [(ngModel)]="upload.altText" [disabled]="isBatchUploadRunning()" />
+              </label>
+
+              <div class="capture-publish-row">
+                <label class="capture-date-field">
+                  <span>Capture date</span>
+                  <input type="datetime-local" [(ngModel)]="upload.capturedAtLocal" [disabled]="isBatchUploadRunning()" />
+                </label>
+
+                <button
+                  type="button"
+                  class="publish-chip"
+                  [class.is-active]="upload.isPublished"
+                  [attr.aria-pressed]="upload.isPublished"
+                  [disabled]="isBatchUploadRunning()"
+                  (click)="toggleQueuedPublish(upload.id)"
+                >
+                  Publish
+                </button>
+              </div>
+              <small class="capture-date-source">{{ upload.captureDateSource }}</small>
+
+              @if (upload.errorMessage) {
+                <p class="upload-item-error">{{ upload.errorMessage }}</p>
+              }
+            </div>
+
+            <div class="upload-queue-meta">
+              <span class="upload-status" [class.is-uploading]="upload.status === 'uploading'" [class.is-success]="upload.status === 'uploaded'" [class.is-failed]="upload.status === 'failed'">
+                {{ upload.status }}
+              </span>
+              <button type="button" [disabled]="isBatchUploadRunning()" (click)="removeQueuedUpload(upload.id)">Remove</button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}
+
 <section class="gallery-shell" aria-label="Photo gallery">
   @if (errorMessage) {
     <p class="error-message">{{ errorMessage }}</p>

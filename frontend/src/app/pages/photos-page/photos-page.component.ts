@@ -1,20 +1,41 @@
 import { NgStyle } from '@angular/common';
 import { Component, HostListener, OnDestroy, computed, effect, inject, signal, DOCUMENT } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NgIconComponent } from '@ng-icons/core';
+import { firstValueFrom } from 'rxjs';
 import { AdminAuthStateService } from '../../core/admin/admin-auth-state.service';
 import { Photo } from '../../models/photo.model';
 import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
+import { PhotoMetadataService } from '../../services/photo-metadata.service';
+
+type QueuedUploadStatus = 'queued' | 'uploading' | 'uploaded' | 'failed';
+
+interface QueuedPhotoUpload {
+  id: string;
+  file: File;
+  previewUrl: string;
+  caption: string;
+  altText: string;
+  capturedAtLocal: string;
+  captureDateSource: string;
+  isPublished: boolean;
+  status: QueuedUploadStatus;
+  errorMessage: string;
+}
+
+let photoUploadSequence = 0;
 
 @Component({
     selector: 'app-photos-page',
-    imports: [NgStyle, NgIconComponent],
+    imports: [NgStyle, FormsModule, NgIconComponent],
     templateUrl: './photos-page.component.html',
     styleUrls: ['./photos-page.component.css']
 })
 export class PhotosPageComponent implements OnDestroy {
   private readonly photoApi = inject(PhotoApiService);
   private readonly adminAuthState = inject(AdminAuthStateService);
+  private readonly photoMetadata = inject(PhotoMetadataService);
   private readonly window = inject(WINDOW);
   private readonly document = inject(DOCUMENT);
   private readonly masonryRowHeight = 8;
@@ -22,21 +43,14 @@ export class PhotosPageComponent implements OnDestroy {
   private readonly fallbackAspectRatio = 4 / 3;
   private readonly thumbAspectRatios = new Map<string, number>();
   private readonly pendingPhotoUpdates = signal<Set<string>>(new Set());
+  private readonly isUploadingBatch = signal(false);
+  private readonly maxQueuedUploads = 20;
 
   readonly canManagePublication = computed(() => this.adminAuthState.can('photosManagePublication'));
   private readonly shouldIncludeUnpublished = computed(() => this.adminAuthState.can('photosViewUnpublished'));
   private readonly loadPhotosEffect = effect((onCleanup) => {
     const includeUnpublished = this.shouldIncludeUnpublished();
-    const subscription = this.photoApi.getPhotos(120, 0, includeUnpublished).subscribe({
-      next: (response) => {
-        this.errorMessage = '';
-        this.photos = response.rows;
-      },
-      error: () => {
-        this.photos = [];
-        this.errorMessage = 'Unable to load photos right now.';
-      }
-    });
+    const subscription = this.fetchPhotos(includeUnpublished);
 
     onCleanup(() => {
       subscription.unsubscribe();
@@ -44,9 +58,146 @@ export class PhotosPageComponent implements OnDestroy {
   });
 
   photos: Photo[] = [];
+  queuedUploads: QueuedPhotoUpload[] = [];
   activePhoto: Photo | null = null;
   activePhotoImageStyle: Record<string, number> = {};
   errorMessage = '';
+  uploadStatusMessage = '';
+
+  canQueueMoreUploads(): boolean {
+    return this.queuedUploads.length < this.maxQueuedUploads;
+  }
+
+  canStartUploadBatch(): boolean {
+    return this.queuedUploads.some((upload) => upload.status === 'queued' || upload.status === 'failed');
+  }
+
+  isBatchUploadRunning(): boolean {
+    return this.isUploadingBatch();
+  }
+
+  onUploadSelection(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const files = input?.files;
+
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    void this.addQueuedUploads(Array.from(files));
+
+    if (input) {
+      input.value = '';
+    }
+  }
+
+  removeQueuedUpload(uploadId: string): void {
+    if (this.isUploadingBatch()) {
+      return;
+    }
+
+    const upload = this.queuedUploads.find((item) => item.id === uploadId);
+    if (upload) {
+      this.revokePreviewUrl(upload.previewUrl);
+    }
+
+    this.queuedUploads = this.queuedUploads.filter((item) => item.id !== uploadId);
+  }
+
+  clearCompletedUploads(): void {
+    if (this.isUploadingBatch()) {
+      return;
+    }
+
+    const remaining: QueuedPhotoUpload[] = [];
+    for (const upload of this.queuedUploads) {
+      if (upload.status === 'uploaded') {
+        this.revokePreviewUrl(upload.previewUrl);
+        continue;
+      }
+      remaining.push(upload);
+    }
+
+    this.queuedUploads = remaining;
+  }
+
+  toggleQueuedPublish(uploadId: string): void {
+    if (this.isUploadingBatch()) {
+      return;
+    }
+
+    const upload = this.queuedUploads.find((item) => item.id === uploadId);
+    if (!upload) {
+      return;
+    }
+
+    this.patchQueuedUpload(uploadId, { isPublished: !upload.isPublished });
+  }
+
+  async uploadQueuedPhotos(): Promise<void> {
+    if (this.isUploadingBatch() || !this.canStartUploadBatch()) {
+      return;
+    }
+
+    this.isUploadingBatch.set(true);
+    this.uploadStatusMessage = 'Uploading photos...';
+    this.errorMessage = '';
+
+    let uploadedCount = 0;
+    let failedCount = 0;
+
+    for (const upload of this.queuedUploads) {
+      if (upload.status === 'uploaded') {
+        continue;
+      }
+
+      const caption = upload.caption.trim();
+      if (!caption) {
+        failedCount += 1;
+        this.patchQueuedUpload(upload.id, {
+          status: 'failed',
+          errorMessage: 'Caption is required.'
+        });
+        continue;
+      }
+
+      this.patchQueuedUpload(upload.id, {
+        status: 'uploading',
+        errorMessage: ''
+      });
+
+      try {
+        await firstValueFrom(
+          this.photoApi.uploadPhoto(upload.file, {
+            caption,
+            altText: upload.altText.trim(),
+            capturedAt: this.toIsoTimestamp(upload.capturedAtLocal),
+            clientLastModified: this.fileLastModifiedToIso(upload.file),
+            isPublished: upload.isPublished
+          })
+        );
+        uploadedCount += 1;
+        this.patchQueuedUpload(upload.id, { status: 'uploaded', errorMessage: '' });
+      } catch {
+        failedCount += 1;
+        this.patchQueuedUpload(upload.id, {
+          status: 'failed',
+          errorMessage: 'Upload failed. Check image type/size and try again.'
+        });
+      }
+    }
+
+    await this.reloadPhotos();
+
+    if (failedCount === 0) {
+      this.uploadStatusMessage = `Uploaded ${uploadedCount} photo${uploadedCount === 1 ? '' : 's'}.`;
+    } else {
+      this.uploadStatusMessage = `Uploaded ${uploadedCount}, failed ${failedCount}.`;
+      this.errorMessage = 'Some uploads failed. You can edit and retry failed items.';
+    }
+
+    this.isUploadingBatch.set(false);
+  }
 
   openPhoto(photo: Photo, event?: Event): void {
     this.activePhoto = photo;
@@ -244,7 +395,141 @@ export class PhotosPageComponent implements OnDestroy {
     this.pendingPhotoUpdates.set(next);
   }
 
+  private async addQueuedUploads(files: File[]): Promise<void> {
+    const available = Math.max(this.maxQueuedUploads - this.queuedUploads.length, 0);
+    const accepted = files.slice(0, available);
+    const nextUploads = [...this.queuedUploads];
+
+    if (accepted.length < files.length) {
+      this.errorMessage = `You can queue up to ${this.maxQueuedUploads} uploads at a time.`;
+    } else {
+      this.errorMessage = '';
+    }
+
+    for (const file of accepted) {
+      nextUploads.push({
+        id: this.nextUploadId(),
+        file,
+        previewUrl: this.createPreviewUrl(file),
+        caption: this.defaultCaption(file.name),
+        altText: '',
+        capturedAtLocal: '',
+        captureDateSource: 'Detecting metadata...',
+        isPublished: true,
+        status: 'queued',
+        errorMessage: ''
+      });
+    }
+
+    this.queuedUploads = nextUploads;
+
+    await Promise.all(
+      accepted.map(async (file) => {
+        const uploadId = nextUploads.find((item) => item.file === file)?.id;
+        if (!uploadId) {
+          return;
+        }
+
+        const detected = await this.photoMetadata.detectCapturedAtLocal(file);
+        this.patchQueuedUpload(uploadId, {
+          capturedAtLocal: detected.value,
+          captureDateSource: detected.source
+        });
+      })
+    );
+  }
+
+  private fetchPhotos(includeUnpublished: boolean) {
+    return this.photoApi.getPhotos(120, 0, includeUnpublished).subscribe({
+      next: (response) => {
+        this.errorMessage = '';
+        this.photos = response.rows;
+      },
+      error: () => {
+        this.photos = [];
+        this.errorMessage = 'Unable to load photos right now.';
+      }
+    });
+  }
+
+  private async reloadPhotos(): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.photoApi.getPhotos(120, 0, this.shouldIncludeUnpublished()));
+      this.photos = response.rows;
+    } catch {
+      this.errorMessage = 'Unable to refresh photos right now.';
+    }
+  }
+
+  private patchQueuedUpload(uploadId: string, patch: Partial<QueuedPhotoUpload>): void {
+    this.queuedUploads = this.queuedUploads.map((upload) => {
+      if (upload.id !== uploadId) {
+        return upload;
+      }
+
+      return {
+        ...upload,
+        ...patch
+      };
+    });
+  }
+
+  private toIsoTimestamp(value: string): string | undefined {
+    const normalized = value.trim();
+    if (!normalized) {
+      return undefined;
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return undefined;
+    }
+
+    return parsed.toISOString();
+  }
+
+  private fileLastModifiedToIso(file: File): string | undefined {
+    if (!Number.isFinite(file.lastModified) || file.lastModified <= 0) {
+      return undefined;
+    }
+
+    return new Date(file.lastModified).toISOString();
+  }
+
+  private defaultCaption(filename: string): string {
+    const stem = filename.replace(/\.[^.]+$/, '');
+    return stem.replace(/[_-]+/g, ' ').trim() || 'Photo';
+  }
+
+  private nextUploadId(): string {
+    photoUploadSequence += 1;
+    return `photo-upload-${photoUploadSequence}`;
+  }
+
+  private createPreviewUrl(file: File): string {
+    if (typeof URL.createObjectURL === 'function') {
+      return URL.createObjectURL(file);
+    }
+
+    return '';
+  }
+
+  private revokePreviewUrl(url: string): void {
+    if (url && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  private clearQueuedUploads(): void {
+    for (const upload of this.queuedUploads) {
+      this.revokePreviewUrl(upload.previewUrl);
+    }
+
+    this.queuedUploads = [];
+  }
+
   ngOnDestroy(): void {
+    this.clearQueuedUploads();
     this.document.body.classList.remove('overlay-open');
   }
 }

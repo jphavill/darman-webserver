@@ -95,74 +95,23 @@ Example homepage image URL currently used by the Angular app:
 
 `/media/GOPR4391-Enhanced-NR.jpg`
 
-### Add or update an image
+### Add or update static media
 
-1. Put a source image anywhere on your machine (for example in `~/Pictures`).
-2. Run:
-   ```bash
-   ./scripts/prepare-media.sh ~/Pictures/your-image.jpg 1600
-   ```
-3. The script creates an optimized WebP in `./media` with a content-hashed name.
-4. Copy the printed URL (`/media/<name>.webp`) into the frontend component.
+1. Add files directly under `./media`.
+2. Reference them in the frontend as `/media/<filename>`.
 
-- Media is not synced through github. To transfer to the server use scp
+- Media is not synced through github. To transfer to the server use scp:
 ```bash
-scp media/{filename}.webp jh://home/jphavill/dockerStuff/darman-webserver/media/
+scp media/{filename} jh://home/jphavill/dockerStuff/darman-webserver/media/
 ```
 
-### Batch gallery workflow (thumb + full)
+### Gallery photo workflow
 
-For the photo gallery, generate both thumbnail and full-size variants from a directory plus metadata CSV.
+Photo gallery uploads are handled directly in the admin UI on the Photos page.
 
-1. Create a metadata CSV (example columns below):
-
-```csv
-filename,id,alt_text,caption,captured_at,is_published
-IMG_1001.JPG,,Fog over the valley,Morning inversion near the ridge,2026-03-16T09:45:00-07:00,true
-IMG_1002.JPG,,Workbench detail,New fixture test fit,2026-03-15T18:22:00-07:00,true
-```
-
-- `id` can be left blank on first run; the script writes generated UUIDs to a resolved CSV.
-
-2. Process all photos in a directory:
-
-```bash
-./scripts/prepare-gallery-batch.py \
-  --input-dir ~/Pictures/gallery-upload \
-  --metadata ~/Pictures/gallery-upload/metadata.csv \
-  --thumb-width 640 \
-  --thumb-quality 82 \
-  --full-quality 95 \
-  --manifest-out ./media/gallery-manifest.json
-```
-
-- `media/gallery-manifest.json` is merged by `id` when it already exists (new IDs append, existing IDs update), so you can process new batches from different source directories without re-including older files.
-
-3. Copy generated files to the server media folder:
-
-```bash
-scp media/gallery/* jh://home/jphavill/dockerStuff/darman-webserver/media/gallery/
-```
-
-4. Upsert metadata into Postgres via API:
-
-```bash
-./scripts/upsert-gallery-manifest.sh ./media/gallery-manifest.json "$ADMIN_API_TOKEN" http://localhost/api
-```
-
-The gallery API stores both `thumb_url` and `full_url` for each UUID photo record.
-
-### Hashing + resizing workflow
-
-`scripts/prepare-media.sh` does this automatically:
-
-1. Auto-orients and strips metadata
-2. Resizes to max width (default `1600` px)
-3. Converts to WebP (`quality 82`)
-4. Computes SHA-256 hash of output bytes
-5. Writes file as `<slug>-<12-char-hash>.webp`
-
-This lets you cache images aggressively in Caddy (`immutable`) and safely publish updates by changing the filename.
+- Upload one or multiple files in the browser.
+- The backend stores both thumbnail and full WebP variants.
+- Metadata is written directly to the `photos` table (no manifest files or batch upsert step).
 
 ## Running the Project
 

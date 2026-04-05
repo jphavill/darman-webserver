@@ -17,5 +17,4 @@ __pycache__/
 .idea/
 media/*
 !media/.gitkeep
-!media/gallery-manifest.json
 cloudflared/config.yml
