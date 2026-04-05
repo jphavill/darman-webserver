@@ -37,6 +37,20 @@ def test_admin_session_login_and_read_returns_feature_flags(client, monkeypatch)
     }
 
 
+def test_admin_session_login_cookies_are_not_secure_in_tests(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+
+    login = client.post("/v1/system/admin/session", json={"api_key": "secret"})
+    assert login.status_code == 200
+
+    set_cookie_values = login.headers.get_list("set-cookie")
+    lowered = [value.lower() for value in set_cookie_values]
+
+    assert any("admin_session=" in value for value in lowered)
+    assert any("xsrf-token=" in value for value in lowered)
+    assert all("; secure" not in value for value in lowered)
+
+
 def test_admin_session_logout_requires_csrf_header(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     login = client.post("/v1/system/admin/session", json={"api_key": "secret"})

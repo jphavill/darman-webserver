@@ -138,7 +138,13 @@ def client(db_session) -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def clear_settings_cache() -> Generator[None, None, None]:
+def admin_cookie_test_settings(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    monkeypatch.setenv("ADMIN_SESSION_COOKIE_SECURE", "false")
+    yield
+
+
+@pytest.fixture(autouse=True)
+def clear_settings_cache(admin_cookie_test_settings: None) -> Generator[None, None, None]:
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
