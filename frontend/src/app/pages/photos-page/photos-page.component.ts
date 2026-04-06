@@ -8,6 +8,7 @@ import { Photo } from '../../models/photo.model';
 import { WINDOW } from '../../core/browser/browser-globals';
 import { PhotoApiService } from '../../services/photo-api.service';
 import { PhotoMetadataService } from '../../services/photo-metadata.service';
+import { resolveAltTextWithCaptionFallback } from '../../shared/text/alt-text.utils';
 
 type QueuedUploadStatus = 'queued' | 'uploading' | 'uploaded' | 'failed';
 
@@ -60,9 +61,15 @@ export class PhotosPageComponent implements OnDestroy {
   photos: Photo[] = [];
   queuedUploads: QueuedPhotoUpload[] = [];
   activePhoto: Photo | null = null;
+  editingPhoto: Photo | null = null;
+  isDeleteConfirming = false;
   activePhotoImageStyle: Record<string, number> = {};
+  editingCaption = '';
+  editingAltText = '';
   errorMessage = '';
   uploadStatusMessage = '';
+  editSuccessMessage = '';
+  editFailureMessage = '';
 
   canQueueMoreUploads(): boolean {
     return this.queuedUploads.length < this.maxQueuedUploads;
@@ -170,7 +177,12 @@ export class PhotosPageComponent implements OnDestroy {
         await firstValueFrom(
           this.photoApi.uploadPhoto(upload.file, {
             caption,
-            altText: upload.altText.trim(),
+            altText: resolveAltTextWithCaptionFallback({
+              altText: upload.altText,
+              caption,
+              filename: upload.file.name,
+              fallback: 'Photo'
+            }),
             capturedAt: this.toIsoTimestamp(upload.capturedAtLocal),
             clientLastModified: this.fileLastModifiedToIso(upload.file),
             isPublished: upload.isPublished
@@ -224,6 +236,120 @@ export class PhotosPageComponent implements OnDestroy {
     this.window.open(this.activePhoto.fullUrl, '_blank', 'noopener,noreferrer');
   }
 
+  openEditPhoto(photo: Photo, event: Event): void {
+    event.stopPropagation();
+    this.editingPhoto = photo;
+    this.isDeleteConfirming = false;
+    this.editingCaption = photo.caption;
+    this.editingAltText = photo.altText;
+    this.editSuccessMessage = '';
+    this.editFailureMessage = '';
+  }
+
+  closeEditPhoto(): void {
+    this.editingPhoto = null;
+    this.isDeleteConfirming = false;
+    this.editingCaption = '';
+    this.editingAltText = '';
+    this.editSuccessMessage = '';
+    this.editFailureMessage = '';
+  }
+
+  requestCloseEditPhoto(): void {
+    if (this.isEditingPhotoPending()) {
+      return;
+    }
+
+    this.closeEditPhoto();
+  }
+
+  isEditingPhotoPending(): boolean {
+    return !!this.editingPhoto && this.isUpdatingPhoto(this.editingPhoto.id);
+  }
+
+  cancelDeletePhoto(): void {
+    this.isDeleteConfirming = false;
+  }
+
+  saveEditedPhoto(): void {
+    if (!this.editingPhoto || this.isUpdatingPhoto(this.editingPhoto.id)) {
+      return;
+    }
+
+    const caption = this.editingCaption.trim();
+    const altText = this.editingAltText.trim();
+    if (!caption) {
+      this.editFailureMessage = 'Caption is required.';
+      this.editSuccessMessage = '';
+      return;
+    }
+
+    const photoId = this.editingPhoto.id;
+    const payloadAltText = resolveAltTextWithCaptionFallback({
+      altText,
+      caption,
+      existingAltText: this.editingPhoto.altText,
+      fallback: 'Photo'
+    });
+    this.isDeleteConfirming = false;
+    this.markPhotoPending(photoId, true);
+    this.editFailureMessage = '';
+    this.editSuccessMessage = '';
+
+    this.photoApi.updatePhoto(photoId, { caption, altText: payloadAltText }).subscribe({
+      next: (updatedPhoto) => {
+        this.patchPhoto(updatedPhoto);
+        if (this.activePhoto?.id === updatedPhoto.id) {
+          this.activePhoto = updatedPhoto;
+        }
+        this.editingPhoto = updatedPhoto;
+        this.editingCaption = updatedPhoto.caption;
+        this.editingAltText = updatedPhoto.altText;
+        this.editSuccessMessage = 'Photo details saved.';
+        this.editFailureMessage = '';
+        this.errorMessage = '';
+        this.markPhotoPending(photoId, false);
+      },
+      error: () => {
+        this.editFailureMessage = 'Unable to update photo right now.';
+        this.editSuccessMessage = '';
+        this.markPhotoPending(photoId, false);
+      }
+    });
+  }
+
+  deleteEditedPhoto(): void {
+    if (!this.editingPhoto || this.isUpdatingPhoto(this.editingPhoto.id)) {
+      return;
+    }
+
+    if (!this.isDeleteConfirming) {
+      this.isDeleteConfirming = true;
+      this.editFailureMessage = '';
+      this.editSuccessMessage = '';
+      return;
+    }
+
+    const photoId = this.editingPhoto.id;
+    this.markPhotoPending(photoId, true);
+    this.editFailureMessage = '';
+    this.editSuccessMessage = '';
+
+    this.photoApi.deletePhoto(photoId).subscribe({
+      next: () => {
+        this.removePhoto(photoId);
+        this.markPhotoPending(photoId, false);
+        this.closeEditPhoto();
+        this.errorMessage = '';
+      },
+      error: () => {
+        this.isDeleteConfirming = false;
+        this.editFailureMessage = 'Unable to delete photo right now.';
+        this.markPhotoPending(photoId, false);
+      }
+    });
+  }
+
   isUpdatingPhoto(photoId: string): boolean {
     return this.pendingPhotoUpdates().has(photoId);
   }
@@ -240,7 +366,7 @@ export class PhotosPageComponent implements OnDestroy {
     this.patchPhotoPublication(photo.id, nextValue);
     this.markPhotoPending(photo.id, true);
 
-    this.photoApi.updatePhotoPublication(photo.id, nextValue).subscribe({
+    this.photoApi.updatePhoto(photo.id, { isPublished: nextValue }).subscribe({
       next: (updatedPhoto) => {
         this.patchPhoto(updatedPhoto);
         this.markPhotoPending(photo.id, false);
@@ -290,6 +416,11 @@ export class PhotosPageComponent implements OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.editingPhoto) {
+      this.requestCloseEditPhoto();
+      return;
+    }
+
     if (this.activePhoto) {
       this.closePhoto();
     }
@@ -377,6 +508,13 @@ export class PhotosPageComponent implements OnDestroy {
 
   private patchPhoto(updatedPhoto: Photo): void {
     this.photos = this.photos.map((photo) => (photo.id === updatedPhoto.id ? updatedPhoto : photo));
+  }
+
+  private removePhoto(photoId: string): void {
+    this.photos = this.photos.filter((photo) => photo.id !== photoId);
+    if (this.activePhoto?.id === photoId) {
+      this.closePhoto();
+    }
   }
 
   private patchPhotoPublication(photoId: string, isPublished: boolean): void {

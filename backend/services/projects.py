@@ -225,6 +225,17 @@ def update_project_image(db: Session, project_id: UUID, image_id: UUID, payload:
         else:
             record.is_hero = False
 
+    if payload.caption is not None:
+        caption = collapse_whitespace(payload.caption)
+        record.caption = caption or None
+
+    if payload.alt_text is not None:
+        record.alt_text = _resolve_alt_text_with_caption_fallback(
+            alt_text=payload.alt_text,
+            caption=record.caption,
+            existing_alt_text=record.alt_text,
+        )
+
     record.updated_at = func.now()
     db.commit()
     db.refresh(record)
@@ -374,6 +385,18 @@ def _resolve_media_path_from_url(media_url: str) -> Path | None:
 
 def upload_size_limit_error(max_bytes: int) -> str:
     return f"Uploaded image exceeds configured max size ({max_bytes} bytes)"
+
+
+def _resolve_alt_text_with_caption_fallback(*, alt_text: str | None, caption: str | None, existing_alt_text: str) -> str:
+    normalized_alt_text = collapse_whitespace(alt_text or "")
+    if normalized_alt_text:
+        return normalized_alt_text
+
+    normalized_caption = collapse_whitespace(caption or "")
+    if normalized_caption:
+        return normalized_caption
+
+    return existing_alt_text
 
 
 def _resize_with_target_width(image, target_width: int, resample):

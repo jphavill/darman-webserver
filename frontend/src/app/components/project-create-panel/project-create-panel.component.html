@@ -10,79 +10,19 @@
     }
   </div>
 
-  <div class="form-grid">
-    <label class="field-block">
-      <span class="field-label">Title</span>
-      <input [(ngModel)]="draft.title" />
-    </label>
-
-    <label class="field-block">
-      <span class="field-label">Type</span>
-      <select [(ngModel)]="projectType">
-        <option value="software">Software</option>
-        <option value="physical">Physical</option>
-      </select>
-    </label>
-  </div>
-
-  <label class="field-block">
-    <span class="field-label">Short description</span>
-    <textarea rows="2" [(ngModel)]="draft.short_description"></textarea>
-  </label>
-
-  <label class="field-block">
-    <span class="field-label">Long markdown</span>
-    <textarea rows="4" [(ngModel)]="draft.long_description_md"></textarea>
-  </label>
-
-  <label class="checkbox-row">
-    <input type="checkbox" [(ngModel)]="draft.is_published" />
-    <span>Publish now</span>
-  </label>
-
-  <div class="image-upload-card">
-    <div class="image-upload-header">
-      <h4>Images</h4>
-      <span>{{ imageQueue.length }} / 12</span>
-    </div>
-
-    <div class="image-upload-actions">
-      <input
-        type="file"
-        accept=".jpg,.jpeg,.png,.webp,.heic"
-        multiple
-        (change)="onCreateImageSelection($event)"
-        [disabled]="!canSelectMoreImages"
-      />
-    </div>
-
-    @if (imageQueue.length > 0) {
-      <div class="queued-images">
-        @for (image of imageQueue; track image.id) {
-          <div class="queued-image-row">
-            <img [src]="image.previewUrl" [alt]="image.altText" />
-
-            <div class="queued-image-fields">
-              <label class="field-block">
-                <span class="field-label">Alt text</span>
-                <input [(ngModel)]="image.altText" />
-              </label>
-              <label class="field-block">
-                <span class="field-label">Caption</span>
-                <input [(ngModel)]="image.caption" />
-              </label>
-            </div>
-
-            <div class="queued-image-actions">
-              <button type="button" class="admin-btn secondary small" (click)="moveImage(image.id, -1)">Up</button>
-              <button type="button" class="admin-btn secondary small" (click)="moveImage(image.id, 1)">Down</button>
-              <button type="button" class="admin-btn danger small" (click)="removeImage(image.id)">Remove</button>
-            </div>
-          </div>
-        }
-      </div>
-    }
-  </div>
+  <app-project-editor-form
+    [value]="editorValue"
+    [images]="imageQueue"
+    [maxImages]="12"
+    [fileInputDisabled]="!canSelectMoreImages"
+    [uploadHint]="'Choose one or more files to queue. Set hero, alt text, and caption per image below.'"
+    (valueChange)="onEditorValueChange($event)"
+    (filesSelected)="onCreateImageSelection($event)"
+    (imagePatched)="patchImage($event)"
+    (setHeroRequested)="setQueueHero($event)"
+    (moveRequested)="moveImage($event.imageId, $event.direction)"
+    (deleteRequested)="removeImage($event)"
+  ></app-project-editor-form>
 
   <div class="editor-actions">
     <button type="button" class="admin-btn" (click)="submit()" [disabled]="isSubmitting">

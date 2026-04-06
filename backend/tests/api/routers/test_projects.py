@@ -199,6 +199,24 @@ def test_project_image_upload_reorder_and_delete(client, monkeypatch, admin_auth
     assert hero_toggle.status_code == 200
     assert hero_toggle.json()["is_hero"] is True
 
+    metadata_update = client.patch(
+        f"/v1/projects/{project_id}/images/{image_two_id}",
+        headers=headers,
+        json={"alt_text": "   ", "caption": "Updated caption"},
+    )
+    assert metadata_update.status_code == 200
+    assert metadata_update.json()["alt_text"] == "Updated caption"
+    assert metadata_update.json()["caption"] == "Updated caption"
+
+    metadata_update_blank = client.patch(
+        f"/v1/projects/{project_id}/images/{image_two_id}",
+        headers=headers,
+        json={"alt_text": "   ", "caption": "   "},
+    )
+    assert metadata_update_blank.status_code == 200
+    assert metadata_update_blank.json()["alt_text"] == "Updated caption"
+    assert metadata_update_blank.json()["caption"] is None
+
     delete = client.delete(f"/v1/projects/{project_id}/images/{image_one_id}", headers=headers)
     assert delete.status_code == 204
 

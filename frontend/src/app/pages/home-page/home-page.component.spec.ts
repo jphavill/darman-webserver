@@ -220,14 +220,16 @@ describe('HomePageComponent', () => {
           file: new File(['one'], 'one.jpg', { type: 'image/jpeg' }),
           previewUrl: 'blob:one',
           altText: 'one',
-          caption: ''
+          caption: '',
+          isHero: false
         },
         {
           id: 'q2',
           file: new File(['two'], 'two.jpg', { type: 'image/jpeg' }),
           previewUrl: 'blob:two',
           altText: 'two',
-          caption: ''
+          caption: '',
+          isHero: false
         }
       ]
     });

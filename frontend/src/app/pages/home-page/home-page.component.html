@@ -6,24 +6,10 @@
   }
 
   @if (canManageProjectContent()) {
-    <section class="admin-controls">
-      <button type="button" class="admin-btn" (click)="toggleAdminPanel()">
-        {{ adminPanelOpen ? 'Close Manage Projects' : 'Manage Projects' }}
-      </button>
-
-      @if (adminPanelOpen) {
-        <div class="admin-panel">
-          <div class="admin-panel-header">
-            <h2>Project Admin</h2>
-            <p>Create, publish, reorder, and manage images in one place.</p>
-            @if (adminStatusMessage()) {
-              <p class="status-message">{{ adminStatusMessage() }}</p>
-            }
-          </div>
-          <app-project-create-panel (createRequested)="createProject($event)"></app-project-create-panel>
-        </div>
-      }
-    </section>
+    @if (adminStatusMessage()) {
+      <p class="status-message">{{ adminStatusMessage() }}</p>
+    }
+    <app-project-create-panel (createRequested)="createProject($event)"></app-project-create-panel>
   }
 
   @if (softwareProjects().length > 0) {
@@ -59,12 +45,9 @@
       [project]="project"
       [statusMessage]="adminStatusMessage()"
       [errorMessage]="errorMessage()"
+      [isSaving]="isSavingProjectEdit()"
       (closed)="cancelEdit()"
       (saveRequested)="saveEdit($event)"
-      (uploadRequested)="uploadImage($event)"
-      (setHeroRequested)="setHero($event)"
-      (moveImageRequested)="moveImage($event)"
-      (deleteImageRequested)="deleteImage($event)"
     ></app-project-edit-modal>
   }
 

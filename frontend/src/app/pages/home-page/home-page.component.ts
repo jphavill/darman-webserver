@@ -4,15 +4,14 @@ import { marked } from 'marked';
 import { ProjectCreatePanelComponent, ProjectCreateRequestedEvent } from '../../components/project-create-panel/project-create-panel.component';
 import {
   ProjectEditModalComponent,
-  ProjectEditSaveRequestedEvent,
-  ProjectEditUploadRequestedEvent
+  ProjectEditSaveRequestedEvent
 } from '../../components/project-edit-modal/project-edit-modal.component';
 import { SiteFooterComponent } from '../../components/site-footer/site-footer.component';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { ProjectOverlayComponent } from '../../components/project-overlay/project-overlay.component';
 import { ProjectSectionComponent } from '../../components/project-section/project-section.component';
 import { WINDOW } from '../../core/browser/browser-globals';
-import { Project, ProjectImage, ProjectOpenRequest } from '../../models/project.model';
+import { Project, ProjectOpenRequest } from '../../models/project.model';
 import { ProjectAdminFacadeService } from '../../services/project-admin-facade.service';
 
 @Component({
@@ -40,6 +39,7 @@ export class HomePageComponent implements OnDestroy {
   readonly physicalProjects = this.projectAdmin.physicalProjects;
   readonly errorMessage = this.projectAdmin.errorMessage;
   readonly adminStatusMessage = this.projectAdmin.adminStatusMessage;
+  readonly isSavingProjectEdit = this.projectAdmin.isSavingProjectEdit;
   readonly canManageProjectContent = this.projectAdmin.canManageProjectContent;
   readonly canManageProjectPublication = this.projectAdmin.canManageProjectPublication;
   readonly pendingProjectPublicationUpdates = this.projectAdmin.pendingProjectPublicationUpdates;
@@ -50,7 +50,6 @@ export class HomePageComponent implements OnDestroy {
   activeProject: Project | null = null;
   activeProjectMarkdown = '';
   expandedStyle: Record<string, string> = {};
-  adminPanelOpen = false;
   editingProjectId = signal<string | null>(null);
   readonly editingProject = computed(() => {
     const projectId = this.editingProjectId();
@@ -104,16 +103,6 @@ export class HomePageComponent implements OnDestroy {
       this.openTrigger = null;
       this.originRect = null;
     }, this.animationMs);
-  }
-
-  toggleAdminPanel(): void {
-    this.adminPanelOpen = !this.adminPanelOpen;
-    this.projectAdmin.errorMessage.set('');
-    this.projectAdmin.adminStatusMessage.set('');
-
-    if (!this.adminPanelOpen) {
-      this.cancelEdit();
-    }
   }
 
   async createProject(event: ProjectCreateRequestedEvent): Promise<void> {
@@ -177,8 +166,8 @@ export class HomePageComponent implements OnDestroy {
     this.editingProjectId.set(null);
   }
 
-  saveEdit(event: ProjectEditSaveRequestedEvent): void {
-    this.projectAdmin.saveProjectEdit(event);
+  async saveEdit(event: ProjectEditSaveRequestedEvent): Promise<void> {
+    await this.projectAdmin.saveProjectEdit(event);
   }
 
   toggleProjectPublication(event: { project: Project; isPublished: boolean }): void {
@@ -187,26 +176,6 @@ export class HomePageComponent implements OnDestroy {
 
   moveProjectFromPill(event: { project: Project; direction: -1 | 1 }): void {
     this.projectAdmin.moveProject(event.project.type, event.project.id, event.direction);
-  }
-
-  uploadImage(event: ProjectEditUploadRequestedEvent): void {
-    this.projectAdmin.uploadImage(event);
-  }
-
-  setHero(event: { projectId: string; image: ProjectImage }): void {
-    this.projectAdmin.setHero(event.projectId, event.image);
-  }
-
-  moveImage(event: { projectId: string; imageId: string; direction: -1 | 1 }): void {
-    const project = this.projectAdmin.allProjects().find((item) => item.id === event.projectId);
-    if (!project) {
-      return;
-    }
-    this.projectAdmin.moveImage(event.projectId, project, event.imageId, event.direction);
-  }
-
-  deleteImage(event: { projectId: string; imageId: string }): void {
-    this.projectAdmin.deleteImage(event.projectId, event.imageId);
   }
 
   @HostListener('document:keydown.escape')

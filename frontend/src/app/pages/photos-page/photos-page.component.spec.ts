@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminAuthStateService } from '../../core/admin/admin-auth-state.service';
 import { WINDOW } from '../../core/browser/browser-globals';
@@ -27,10 +27,11 @@ describe('PhotosPageComponent', () => {
   const adminCan = vi.fn((flag: string) => flag === 'photosManagePublication' || flag === 'photosViewUnpublished');
   const getPhotos = vi.fn();
   const uploadPhoto = vi.fn();
-  const updatePhotoPublication = vi.fn();
+  const updatePhoto = vi.fn();
+  const deletePhoto = vi.fn();
   const detectCapturedAtLocal = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     if (typeof URL.createObjectURL !== 'function') {
       Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:preview') });
     }
@@ -43,11 +44,19 @@ describe('PhotosPageComponent', () => {
 
     getPhotos.mockReset();
     uploadPhoto.mockReset();
-    updatePhotoPublication.mockReset();
+    updatePhoto.mockReset();
+    deletePhoto.mockReset();
     detectCapturedAtLocal.mockReset();
     adminCan.mockClear();
 
     getPhotos.mockReturnValue(of({ rows: [], total: 0 }));
+    updatePhoto.mockImplementation((id: string, payload: { caption?: string; altText?: string; isPublished?: boolean }) => {
+      const nextCaption = payload.caption ?? 'Photo';
+      const nextIsPublished = payload.isPublished ?? true;
+      const mapped = createPhoto(id, nextCaption, nextIsPublished);
+      return of({ ...mapped, altText: payload.altText ?? mapped.altText });
+    });
+    deletePhoto.mockReturnValue(of(void 0));
     detectCapturedAtLocal.mockResolvedValue({ value: '', source: 'No date found (optional field)' });
 
     TestBed.configureTestingModule({
@@ -57,7 +66,8 @@ describe('PhotosPageComponent', () => {
           useValue: {
             getPhotos,
             uploadPhoto,
-            updatePhotoPublication
+            updatePhoto,
+            deletePhoto
           }
         },
         {
@@ -82,6 +92,8 @@ describe('PhotosPageComponent', () => {
         }
       ]
     });
+
+    await TestBed.compileComponents();
   });
 
   afterEach(() => {
@@ -253,4 +265,142 @@ describe('PhotosPageComponent', () => {
     expect(component.queuedUploads[0].id).toBe('upload-2');
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:a.jpg');
   });
+
+  it('opens edit modal with selected photo metadata', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'Gallery shot');
+
+    component.openEditPhoto(existing, new MouseEvent('click'));
+
+    expect(component.editingPhoto?.id).toBe('42');
+    expect(component.editingCaption).toBe('Gallery shot');
+    expect(component.editingAltText).toBe('Gallery shot');
+  });
+
+  it('saves edited caption and alt text', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'Original');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+    component.editingCaption = 'Updated caption';
+    component.editingAltText = 'Updated alt';
+
+    component.saveEditedPhoto();
+
+    expect(updatePhoto).toHaveBeenCalledWith('42', { caption: 'Updated caption', altText: 'Updated alt' });
+    expect(component.photos[0].caption).toBe('Updated caption');
+    expect(component.photos[0].altText).toBe('Updated alt');
+    expect(component.editSuccessMessage).toBe('Photo details saved.');
+  });
+
+  it('allows empty alt text by falling back to caption', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'Original');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+    component.editingCaption = 'Updated caption';
+    component.editingAltText = '   ';
+
+    component.saveEditedPhoto();
+
+    expect(updatePhoto).toHaveBeenCalledWith('42', { caption: 'Updated caption', altText: 'Updated caption' });
+  });
+
+  it('shows save error when edit update fails', () => {
+    updatePhoto.mockReturnValueOnce(throwError(() => new Error('bad save')));
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'Original');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+    component.editingCaption = 'Updated caption';
+    component.editingAltText = 'Updated alt';
+
+    component.saveEditedPhoto();
+
+    expect(component.editFailureMessage).toBe('Unable to update photo right now.');
+    expect(component.editSuccessMessage).toBe('');
+    expect(component.isUpdatingPhoto('42')).toBe(false);
+  });
+
+  it('blocks closing the edit modal while save is pending', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'Original');
+    const pendingSave = new Subject<Photo>();
+    updatePhoto.mockReturnValueOnce(pendingSave.asObservable());
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+    component.editingCaption = 'Updated caption';
+    component.editingAltText = 'Updated alt';
+
+    component.saveEditedPhoto();
+    component.requestCloseEditPhoto();
+    component.onEscape();
+
+    expect(component.editingPhoto?.id).toBe('42');
+    expect(component.isEditingPhotoPending()).toBe(true);
+
+    pendingSave.next({ ...existing, caption: 'Updated caption', altText: 'Updated alt' });
+    pendingSave.complete();
+
+    expect(component.isEditingPhotoPending()).toBe(false);
+    expect(component.editingPhoto?.id).toBe('42');
+  });
+
+  it('uses inline confirmation before deleting', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'To delete');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+
+    component.deleteEditedPhoto();
+
+    expect(component.isDeleteConfirming).toBe(true);
+    expect(deletePhoto).not.toHaveBeenCalled();
+
+    component.cancelDeletePhoto();
+    expect(component.isDeleteConfirming).toBe(false);
+  });
+
+  it('deletes photo from gallery when requested in edit modal', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'To delete');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+
+    component.deleteEditedPhoto();
+    component.deleteEditedPhoto();
+
+    expect(deletePhoto).toHaveBeenCalledWith('42');
+    expect(component.photos).toEqual([]);
+    expect(component.editingPhoto).toBeNull();
+  });
+
+  it('shows delete error when delete fails', () => {
+    deletePhoto.mockReturnValueOnce(throwError(() => new Error('bad delete')));
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'To delete');
+    component.photos = [existing];
+    component.openEditPhoto(existing, new MouseEvent('click'));
+
+    component.deleteEditedPhoto();
+    component.deleteEditedPhoto();
+
+    expect(component.editFailureMessage).toBe('Unable to delete photo right now.');
+    expect(component.isDeleteConfirming).toBe(false);
+    expect(component.editingPhoto?.id).toBe('42');
+  });
+
+  it('closes active photo when deleted from edit modal', () => {
+    const component = TestBed.runInInjectionContext(() => new PhotosPageComponent());
+    const existing = createPhoto('42', 'To delete');
+    component.photos = [existing];
+    component.activePhoto = existing;
+    component.openEditPhoto(existing, new MouseEvent('click'));
+
+    component.deleteEditedPhoto();
+    component.deleteEditedPhoto();
+
+    expect(component.activePhoto).toBeNull();
+  });
+
 });

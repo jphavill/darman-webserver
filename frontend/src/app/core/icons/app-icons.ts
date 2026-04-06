@@ -9,6 +9,7 @@ import {
   lucidePencil,
   lucideRotateCcw,
   lucideTable,
+  lucideTrash2,
   lucideX
 } from '@ng-icons/lucide';
 import { gamePodium } from '@ng-icons/game-icons';
@@ -25,5 +26,6 @@ export const appIcons = {
   link: lucideLink,
   arrowUp: lucideArrowUp,
   arrowDown: lucideArrowDown,
-  edit: lucidePencil
+  edit: lucidePencil,
+  trash: lucideTrash2
 };

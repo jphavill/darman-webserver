@@ -12,6 +12,12 @@ export interface PhotoUploadPayload {
   isPublished?: boolean;
 }
 
+export interface PhotoUpdatePayload {
+  caption?: string;
+  altText?: string;
+  isPublished?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,8 +35,26 @@ export class PhotoApiService {
     );
   }
 
-  updatePhotoPublication(photoId: string, isPublished: boolean): Observable<Photo> {
-    return this.http.patch<PhotoApi>(`/api/v1/photos/${photoId}`, { is_published: isPublished }).pipe(map(mapPhotoApiToPhoto));
+  updatePhoto(photoId: string, payload: PhotoUpdatePayload): Observable<Photo> {
+    const body: Record<string, string | boolean> = {};
+
+    if (typeof payload.caption === 'string') {
+      body['caption'] = payload.caption;
+    }
+
+    if (typeof payload.altText === 'string') {
+      body['alt_text'] = payload.altText;
+    }
+
+    if (typeof payload.isPublished === 'boolean') {
+      body['is_published'] = payload.isPublished;
+    }
+
+    return this.http.patch<PhotoApi>(`/api/v1/photos/${photoId}`, body).pipe(map(mapPhotoApiToPhoto));
+  }
+
+  deletePhoto(photoId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/photos/${photoId}`);
   }
 
   uploadPhoto(file: File, payload: PhotoUploadPayload): Observable<Photo> {

@@ -54,8 +54,8 @@ describe('PhotoApiService', () => {
     request.flush({ total: 0, rows: [] });
   });
 
-  it('updates publish state', () => {
-    service.updatePhotoPublication('photo-1', false).subscribe((photo) => {
+  it('updates publish state via updatePhoto payload', () => {
+    service.updatePhoto('photo-1', { isPublished: false }).subscribe((photo) => {
       expect(photo.isPublished).toBe(false);
     });
 
@@ -73,6 +73,38 @@ describe('PhotoApiService', () => {
       created_at: '2024-01-01T00:00:00+00:00',
       updated_at: '2024-01-02T00:00:00+00:00'
     });
+  });
+
+  it('updates photo caption and alt text', () => {
+    service.updatePhoto('photo-1', { caption: 'New caption', altText: 'New alt' }).subscribe((photo) => {
+      expect(photo.caption).toBe('New caption');
+      expect(photo.altText).toBe('New alt');
+    });
+
+    const request = httpMock.expectOne('/api/v1/photos/photo-1');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ caption: 'New caption', alt_text: 'New alt' });
+    request.flush({
+      id: 'photo-1',
+      alt_text: 'New alt',
+      caption: 'New caption',
+      thumb_url: '/thumb.webp',
+      full_url: '/full.webp',
+      captured_at: '2024-01-01T00:00:00+00:00',
+      is_published: true,
+      created_at: '2024-01-01T00:00:00+00:00',
+      updated_at: '2024-01-02T00:00:00+00:00'
+    });
+  });
+
+  it('deletes a photo by id', () => {
+    let completed = false;
+    service.deletePhoto('photo-9').subscribe({ complete: () => (completed = true) });
+
+    const request = httpMock.expectOne('/api/v1/photos/photo-9');
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    expect(completed).toBe(true);
   });
 
   it('uploads a photo with multipart form data', () => {

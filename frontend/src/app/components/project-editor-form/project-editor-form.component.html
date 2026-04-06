@@ -1,0 +1,94 @@
+<div class="create-header-row">
+  <label class="field-block">
+    <span class="field-label">Title</span>
+    <input [ngModel]="value.title" (ngModelChange)="patchValue({ title: $event })" />
+  </label>
+
+  <label class="field-block type-field">
+    <span class="field-label">Type</span>
+    <select [ngModel]="value.type" (ngModelChange)="patchValue({ type: $event })">
+      <option value="software">Software</option>
+      <option value="physical">Physical</option>
+    </select>
+  </label>
+
+  <button
+    type="button"
+    class="publish-chip publish-chip-row"
+    [class.is-active]="value.isPublished"
+    [attr.aria-pressed]="value.isPublished"
+    (click)="patchValue({ isPublished: !value.isPublished })"
+  >
+    Publish
+  </button>
+</div>
+
+<label class="field-block">
+  <span class="field-label">Short description</span>
+  <textarea rows="2" [ngModel]="value.shortDescription" (ngModelChange)="patchValue({ shortDescription: $event })"></textarea>
+</label>
+
+<label class="field-block">
+  <span class="field-label">Long markdown</span>
+  <textarea rows="6" [ngModel]="value.longDescription" (ngModelChange)="patchValue({ longDescription: $event })"></textarea>
+</label>
+
+<div class="image-upload-card">
+  <div class="image-upload-header">
+    <h4>Images</h4>
+    <span>{{ images.length }} / {{ maxImages }}</span>
+  </div>
+
+  <div class="image-upload-actions">
+    <input
+      type="file"
+      accept=".jpg,.jpeg,.png,.webp,.heic"
+      multiple
+      (change)="onFileSelection($event)"
+      [disabled]="fileInputDisabled"
+    />
+  </div>
+
+  <p class="upload-hint">{{ uploadHint }}</p>
+
+  @if (images.length > 0) {
+    <div class="admin-images">
+      @for (image of images; track image.id) {
+        <div class="admin-image-row">
+          <div class="queue-image-media">
+            <img [src]="image.previewUrl" [alt]="image.altText" />
+          </div>
+
+          <div class="admin-image-fields">
+            <label class="field-block queue-caption-field">
+              <span class="field-label">Caption</span>
+              <input [ngModel]="image.caption" (ngModelChange)="patchImage(image.id, { caption: $event })" />
+            </label>
+
+            <div class="queue-alt-actions-row">
+              <label class="field-block queue-alt-field">
+                <span class="field-label">Alt text</span>
+                <input [ngModel]="image.altText" (ngModelChange)="patchImage(image.id, { altText: $event })" />
+              </label>
+
+              <div class="admin-image-actions">
+                <button
+                  type="button"
+                  class="publish-chip hero-chip"
+                  [class.is-active]="image.isHero"
+                  [attr.aria-pressed]="image.isHero"
+                  (click)="requestSetHero(image)"
+                >
+                  Hero
+                </button>
+                <button type="button" class="admin-btn secondary small" (click)="requestMove(image.id, -1)">Up</button>
+                <button type="button" class="admin-btn secondary small" (click)="requestMove(image.id, 1)">Down</button>
+                <button type="button" class="admin-btn danger small" (click)="requestDelete(image.id)">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

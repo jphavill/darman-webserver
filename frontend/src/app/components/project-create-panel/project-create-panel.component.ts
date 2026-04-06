@@ -1,6 +1,13 @@
 import { Component, EventEmitter, OnDestroy, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ProjectCreatePayload } from '../../models/project.model';
+import { ProjectEditorFormComponent, ProjectEditorFormValue } from '../project-editor-form/project-editor-form.component';
+import {
+  createObjectUrlForPreview,
+  defaultImageAltText,
+  moveQueueItemById,
+  revokeObjectUrlForPreview,
+  toggleQueueHero
+} from '../project-editor-form/project-editor-queue.utils';
 
 export interface ProjectCreateQueuedImage {
   id: string;
@@ -8,6 +15,7 @@ export interface ProjectCreateQueuedImage {
   previewUrl: string;
   altText: string;
   caption: string;
+  isHero: boolean;
 }
 
 export interface ProjectCreateRequestedEvent {
@@ -20,7 +28,7 @@ let queueImageSequence = 0;
 @Component({
   selector: 'app-project-create-panel',
   standalone: true,
-  imports: [FormsModule],
+  imports: [ProjectEditorFormComponent],
   templateUrl: './project-create-panel.component.html',
   styleUrls: ['./project-create-panel.component.css']
 })
@@ -41,18 +49,30 @@ export class ProjectCreatePanelComponent implements OnDestroy {
     return this.imageQueue.length < this.maxImages;
   }
 
-  onCreateImageSelection(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const files = input?.files;
-    if (!files || files.length === 0) {
+  get editorValue(): ProjectEditorFormValue {
+    return {
+      title: this.draft.title,
+      type: this.projectType,
+      isPublished: this.draft.is_published,
+      shortDescription: this.draft.short_description,
+      longDescription: this.draft.long_description_md
+    };
+  }
+
+  onEditorValueChange(value: ProjectEditorFormValue): void {
+    this.draft.title = value.title;
+    this.projectType = value.type;
+    this.draft.is_published = value.isPublished;
+    this.draft.short_description = value.shortDescription;
+    this.draft.long_description_md = value.longDescription;
+  }
+
+  onCreateImageSelection(files: File[]): void {
+    if (files.length === 0) {
       return;
     }
 
-    this.addImages(Array.from(files));
-
-    if (input) {
-      input.value = '';
-    }
+    this.addImages(files);
   }
 
   addImages(files: File[]): void {
@@ -71,22 +91,22 @@ export class ProjectCreatePanelComponent implements OnDestroy {
         file,
         previewUrl: this.makePreviewUrl(file),
         altText: this.defaultAltText(file.name),
-        caption: ''
+        caption: '',
+        isHero: false
       });
     }
   }
 
+  setQueueHero(event: { imageId: string; isHero: boolean }): void {
+    this.imageQueue = toggleQueueHero(this.imageQueue, event.imageId, event.isHero);
+  }
+
+  patchImage(event: { imageId: string; patch: { altText?: string; caption?: string } }): void {
+    this.imageQueue = this.imageQueue.map((image) => (image.id === event.imageId ? { ...image, ...event.patch } : image));
+  }
+
   moveImage(imageId: string, direction: -1 | 1): void {
-    const currentIndex = this.imageQueue.findIndex((image) => image.id === imageId);
-    const nextIndex = currentIndex + direction;
-
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= this.imageQueue.length) {
-      return;
-    }
-
-    const nextQueue = [...this.imageQueue];
-    [nextQueue[currentIndex], nextQueue[nextIndex]] = [nextQueue[nextIndex], nextQueue[currentIndex]];
-    this.imageQueue = nextQueue;
+    this.imageQueue = moveQueueItemById(this.imageQueue, imageId, direction);
   }
 
   removeImage(imageId: string): void {
@@ -159,8 +179,7 @@ export class ProjectCreatePanelComponent implements OnDestroy {
   }
 
   private defaultAltText(filename: string): string {
-    const stem = filename.replace(/\.[^.]+$/, '');
-    return stem.replace(/[_-]+/g, ' ').trim() || 'Project image';
+    return defaultImageAltText(filename);
   }
 
   private nextQueueImageId(): string {
@@ -169,15 +188,10 @@ export class ProjectCreatePanelComponent implements OnDestroy {
   }
 
   private makePreviewUrl(file: File): string {
-    if (typeof URL.createObjectURL === 'function') {
-      return URL.createObjectURL(file);
-    }
-    return '';
+    return createObjectUrlForPreview(file);
   }
 
   private revokePreviewUrl(url: string): void {
-    if (url && typeof URL.revokeObjectURL === 'function') {
-      URL.revokeObjectURL(url);
-    }
+    revokeObjectUrlForPreview(url);
   }
 }

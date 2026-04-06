@@ -1,6 +1,18 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Project, ProjectImage } from '../../models/project.model';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
+import { Project } from '../../models/project.model';
+import {
+  ProjectEditorFormComponent,
+  ProjectEditorFormValue,
+  ProjectEditorImageItem
+} from '../project-editor-form/project-editor-form.component';
+import {
+  createObjectUrlForPreview,
+  defaultImageAltText,
+  moveQueueItemById,
+  revokeObjectUrlForPreview,
+  toggleQueueHero
+} from '../project-editor-form/project-editor-queue.utils';
+import { ProjectEditImageDraft } from '../../services/project-edit-save.pipeline';
 
 export interface ProjectEditSaveRequestedEvent {
   projectId: string;
@@ -8,105 +20,177 @@ export interface ProjectEditSaveRequestedEvent {
   shortDescription: string;
   longDescription: string;
   type: 'software' | 'physical';
+  isPublished: boolean;
+  imageDrafts: ProjectEditImageDraft[];
 }
 
-export interface ProjectEditUploadRequestedEvent {
-  projectId: string;
-  file: File;
-  altText: string;
-  caption: string;
-  isHero: boolean;
+interface ProjectEditImageEditorItem extends ProjectEditorImageItem {
+  file: File | null;
+  existingImageId: string | null;
 }
+
+let editQueuedImageSequence = 0;
 
 @Component({
   selector: 'app-project-edit-modal',
   standalone: true,
-  imports: [FormsModule],
+  imports: [ProjectEditorFormComponent],
   templateUrl: './project-edit-modal.component.html',
   styleUrls: ['./project-edit-modal.component.css']
 })
-export class ProjectEditModalComponent {
+export class ProjectEditModalComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) project!: Project;
   @Input() statusMessage = '';
   @Input() errorMessage = '';
+  @Input() isSaving = false;
 
   @Output() closed = new EventEmitter<void>();
   @Output() saveRequested = new EventEmitter<ProjectEditSaveRequestedEvent>();
-  @Output() uploadRequested = new EventEmitter<ProjectEditUploadRequestedEvent>();
-  @Output() setHeroRequested = new EventEmitter<{ projectId: string; image: ProjectImage }>();
-  @Output() moveImageRequested = new EventEmitter<{ projectId: string; imageId: string; direction: -1 | 1 }>();
-  @Output() deleteImageRequested = new EventEmitter<{ projectId: string; imageId: string }>();
 
-  editingTitle = '';
-  editingShort = '';
-  editingLong = '';
-  editingType: 'software' | 'physical' = 'software';
+  editorValue: ProjectEditorFormValue = {
+    title: '',
+    shortDescription: '',
+    longDescription: '',
+    type: 'software',
+    isPublished: false
+  };
+  editorImages: ProjectEditImageEditorItem[] = [];
+  uploadErrorMessage = '';
 
-  uploadAlt = '';
-  uploadCaption = '';
-  uploadHero = false;
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['project']) {
+      return;
+    }
 
-  ngOnChanges(): void {
-    this.editingTitle = this.project.title;
-    this.editingShort = this.project.shortDescription;
-    this.editingLong = this.project.longDescription;
-    this.editingType = this.project.type;
-    this.uploadAlt = '';
-    this.uploadCaption = '';
-    this.uploadHero = false;
+    this.clearQueuedPreviews();
+    this.editorValue = {
+      title: this.project.title,
+      shortDescription: this.project.shortDescription,
+      longDescription: this.project.longDescription,
+      type: this.project.type,
+      isPublished: this.project.isPublished
+    };
+    this.editorImages = this.project.images.map((image) => ({
+      id: image.id,
+      previewUrl: image.thumbUrl,
+      altText: image.altText,
+      caption: image.caption ?? '',
+      isHero: image.isHero,
+      file: null,
+      existingImageId: image.id
+    }));
+    this.uploadErrorMessage = '';
   }
 
   close(): void {
+    if (this.isSaving) {
+      return;
+    }
+
+    this.clearQueuedPreviews();
     this.closed.emit();
   }
 
   save(): void {
-    this.saveRequested.emit({
-      projectId: this.project.id,
-      title: this.editingTitle,
-      shortDescription: this.editingShort,
-      longDescription: this.editingLong,
-      type: this.editingType
-    });
-  }
-
-  uploadImage(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file) {
+    if (this.isSaving) {
       return;
     }
 
-    this.uploadRequested.emit({
+    this.saveRequested.emit({
       projectId: this.project.id,
-      file,
-      altText: this.uploadAlt.trim() || this.defaultAltText(file.name),
-      caption: this.uploadCaption.trim(),
-      isHero: this.uploadHero
+      title: this.editorValue.title,
+      shortDescription: this.editorValue.shortDescription,
+      longDescription: this.editorValue.longDescription,
+      type: this.editorValue.type,
+      isPublished: this.editorValue.isPublished,
+      imageDrafts: this.editorImages.map((image) => ({
+        draftId: image.id,
+        existingImageId: image.existingImageId,
+        file: image.file,
+        altText: image.altText,
+        caption: image.caption,
+        isHero: image.isHero
+      }))
     });
+  }
 
-    this.uploadAlt = '';
-    this.uploadCaption = '';
-    this.uploadHero = false;
-    if (input) {
-      input.value = '';
+  patchEditorValue(value: ProjectEditorFormValue): void {
+    this.editorValue = value;
+  }
+
+  uploadImages(files: File[]): void {
+    if (files.length === 0) {
+      return;
+    }
+
+    const available = Math.max(12 - this.editorImages.length, 0);
+    const accepted = files.slice(0, available);
+
+    if (accepted.length < files.length) {
+      this.uploadErrorMessage = 'You can only queue up to 12 images per project.';
+    } else {
+      this.uploadErrorMessage = '';
+    }
+
+    for (const file of accepted) {
+      this.editorImages.push({
+        id: this.nextQueueImageId(),
+        previewUrl: this.makePreviewUrl(file),
+        altText: this.defaultAltText(file.name),
+        caption: '',
+        isHero: false,
+        file,
+        existingImageId: null
+      });
     }
   }
 
-  setHero(image: ProjectImage): void {
-    this.setHeroRequested.emit({ projectId: this.project.id, image });
+  setHero(event: { imageId: string; isHero: boolean }): void {
+    this.editorImages = toggleQueueHero(this.editorImages, event.imageId, event.isHero);
   }
 
-  moveImage(imageId: string, direction: -1 | 1): void {
-    this.moveImageRequested.emit({ projectId: this.project.id, imageId, direction });
+  patchImage(event: { imageId: string; patch: { altText?: string; caption?: string } }): void {
+    this.editorImages = this.editorImages.map((image) => (image.id === event.imageId ? { ...image, ...event.patch } : image));
+  }
+
+  moveImage(event: { imageId: string; direction: -1 | 1 }): void {
+    this.editorImages = moveQueueItemById(this.editorImages, event.imageId, event.direction);
   }
 
   deleteImage(imageId: string): void {
-    this.deleteImageRequested.emit({ projectId: this.project.id, imageId });
+    const image = this.editorImages.find((item) => item.id === imageId);
+    if (image?.file) {
+      this.revokePreviewUrl(image.previewUrl);
+    }
+    this.editorImages = this.editorImages.filter((image) => image.id !== imageId);
+  }
+
+  ngOnDestroy(): void {
+    this.clearQueuedPreviews();
   }
 
   private defaultAltText(filename: string): string {
-    const stem = filename.replace(/\.[^.]+$/, '');
-    return stem.replace(/[_-]+/g, ' ').trim() || 'Project image';
+    return defaultImageAltText(filename);
+  }
+
+  private nextQueueImageId(): string {
+    editQueuedImageSequence += 1;
+    return `edit-queued-image-${editQueuedImageSequence}`;
+  }
+
+  private makePreviewUrl(file: File): string {
+    return createObjectUrlForPreview(file);
+  }
+
+  private revokePreviewUrl(url: string): void {
+    revokeObjectUrlForPreview(url);
+  }
+
+  private clearQueuedPreviews(): void {
+    for (const image of this.editorImages) {
+      if (image.file) {
+        this.revokePreviewUrl(image.previewUrl);
+      }
+    }
   }
 }

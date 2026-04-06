@@ -101,6 +101,18 @@
         </button>
 
         @if (canManagePublication()) {
+          <div class="photo-admin-actions">
+            <button
+              type="button"
+              class="pill-btn edit"
+              aria-label="Edit photo"
+              [disabled]="isUpdatingPhoto(photo.id)"
+              (click)="openEditPhoto(photo, $event)"
+            >
+              <ng-icon name="edit" aria-hidden="true"></ng-icon>
+            </button>
+          </div>
+
           <label class="publish-toggle" (click)="$event.stopPropagation()">
             <input
               type="checkbox"
@@ -132,6 +144,54 @@
         <ng-icon name="fullscreen" aria-hidden="true"></ng-icon>
         <span>Fullscreen</span>
       </button>
+    </div>
+  </article>
+}
+
+@if (editingPhoto; as photo) {
+  <div class="photo-edit-backdrop" (click)="requestCloseEditPhoto()"></div>
+
+  <article class="photo-edit-modal" role="dialog" aria-modal="true" aria-label="Edit photo" (click)="$event.stopPropagation()">
+    <div class="photo-edit-header">
+      <h3>Edit Photo</h3>
+      <button type="button" class="modal-close-btn" aria-label="Close edit photo modal" [disabled]="isEditingPhotoPending()" (click)="requestCloseEditPhoto()">
+        <ng-icon name="close" aria-hidden="true"></ng-icon>
+      </button>
+    </div>
+
+    @if (editSuccessMessage) {
+      <p class="photo-edit-status-message">{{ editSuccessMessage }}</p>
+    }
+    @if (editFailureMessage) {
+      <p class="photo-edit-error-message" role="status">{{ editFailureMessage }}</p>
+    }
+
+    <label class="field-block">
+      <span class="field-label">Caption</span>
+      <input type="text" [(ngModel)]="editingCaption" [disabled]="isUpdatingPhoto(photo.id)" />
+    </label>
+
+    <label class="field-block">
+      <span class="field-label">Alt text</span>
+      <input type="text" [(ngModel)]="editingAltText" [disabled]="isUpdatingPhoto(photo.id)" />
+    </label>
+
+    <div class="photo-edit-actions">
+      @if (isDeleteConfirming) {
+        <button type="button" class="admin-btn secondary" [disabled]="isUpdatingPhoto(photo.id)" (click)="cancelDeletePhoto()">Cancel</button>
+        <button type="button" class="admin-btn danger" [disabled]="isUpdatingPhoto(photo.id)" (click)="deleteEditedPhoto()">Confirm Delete</button>
+      } @else {
+        <button
+          type="button"
+          class="admin-btn danger"
+          aria-label="Delete photo"
+          [disabled]="isUpdatingPhoto(photo.id)"
+          (click)="deleteEditedPhoto()"
+        >
+          <ng-icon name="trash" aria-hidden="true"></ng-icon>
+        </button>
+      }
+      <button type="button" class="admin-btn save-primary" [disabled]="isUpdatingPhoto(photo.id)" (click)="saveEditedPhoto()">Save</button>
     </div>
   </article>
 }

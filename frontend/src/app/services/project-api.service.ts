@@ -61,8 +61,23 @@ export class ProjectApiService {
     });
   }
 
-  updateProjectImage(projectId: string, imageId: string, isHero: boolean): Observable<ProjectImageApi> {
-    return this.http.patch<ProjectImageApi>(`/api/v1/projects/${projectId}/images/${imageId}`, { is_hero: isHero });
+  updateProjectImage(
+    projectId: string,
+    imageId: string,
+    payload: { isHero?: boolean; altText?: string; caption?: string }
+  ): Observable<ProjectImageApi> {
+    const body: Record<string, unknown> = {};
+    if (typeof payload.isHero === 'boolean') {
+      body['is_hero'] = payload.isHero;
+    }
+    if (typeof payload.altText === 'string') {
+      body['alt_text'] = payload.altText;
+    }
+    if (typeof payload.caption === 'string') {
+      body['caption'] = payload.caption;
+    }
+
+    return this.http.patch<ProjectImageApi>(`/api/v1/projects/${projectId}/images/${imageId}`, body);
   }
 
   deleteProjectImage(projectId: string, imageId: string): Observable<void> {

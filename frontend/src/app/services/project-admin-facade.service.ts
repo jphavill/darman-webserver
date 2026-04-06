@@ -1,8 +1,17 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminAuthStateService } from '../core/admin/admin-auth-state.service';
-import { Project, ProjectImage } from '../models/project.model';
+import { Project } from '../models/project.model';
+import { resolveAltTextWithCaptionFallback } from '../shared/text/alt-text.utils';
 import { ProjectApiService } from './project-api.service';
+import {
+  ProjectEditImageDraft,
+  ProjectEditSaveRequest,
+  buildOrderedImageIds,
+  buildProjectEditSavePlan,
+  finalizeDeletedImageIds,
+  resolveHeroImageId
+} from './project-edit-save.pipeline';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +29,7 @@ export class ProjectAdminFacadeService {
   readonly errorMessage = signal('');
   readonly adminStatusMessage = signal('');
   readonly isCreatingProject = signal(false);
+  readonly isSavingProjectEdit = signal(false);
   readonly pendingProjectPublicationUpdates = signal<Set<string>>(new Set());
 
   readonly allProjects = computed(() => [...this.softwareProjects(), ...this.physicalProjects()]);
@@ -77,13 +87,18 @@ export class ProjectAdminFacadeService {
     }
   }
 
-  async uploadQueuedImage(projectId: string, image: { file: File; altText: string; caption: string }): Promise<string | null> {
+  async uploadQueuedImage(
+    projectId: string,
+    image: { file: File; altText: string; caption: string; isHero: boolean }
+  ): Promise<string | null> {
     try {
+      const caption = image.caption.trim();
+      const altText = this.resolveAltText(image.altText, caption, null, image.file);
       const uploaded = await firstValueFrom(
         this.projectApi.uploadProjectImage(projectId, image.file, {
-          altText: image.altText.trim() || this.defaultAltText(image.file.name),
-          caption: image.caption.trim(),
-          isHero: false
+          altText,
+          caption,
+          isHero: image.isHero
         })
       );
       return uploaded.id;
@@ -100,33 +115,46 @@ export class ProjectAdminFacadeService {
     await firstValueFrom(this.projectApi.reorderProjectImages(projectId, imageIds));
   }
 
-  saveProjectEdit(event: {
-    projectId: string;
-    title: string;
-    shortDescription: string;
-    longDescription: string;
-    type: 'software' | 'physical';
-  }): void {
-    this.errorMessage.set('');
-    this.adminStatusMessage.set('');
+  /**
+   * Save runs in non-destructive phases first and deletes removed images last.
+   * Deleting last reduces irreversible partial-failure outcomes when any earlier phase fails.
+   */
+  async saveProjectEdit(event: ProjectEditSaveRequest): Promise<void> {
+    if (this.isSavingProjectEdit()) {
+      return;
+    }
 
-    this.projectApi
-      .updateProject(event.projectId, {
-        title: event.title,
-        short_description: event.shortDescription,
-        long_description_md: event.longDescription,
-        type: event.type
-      })
-      .subscribe({
-        next: async () => {
-          await this.refreshProjects();
-          this.adminStatusMessage.set('Project details saved.');
-        },
-        error: () => {
-          this.errorMessage.set('Unable to save project right now.');
-          this.adminStatusMessage.set('');
-        }
-      });
+    this.isSavingProjectEdit.set(true);
+    this.errorMessage.set('');
+    this.adminStatusMessage.set('Saving project...');
+
+    const currentProject = this.allProjects().find((project) => project.id === event.projectId) ?? null;
+    const savePlan = buildProjectEditSavePlan(currentProject, event);
+
+    try {
+      await this.updateProjectFields(event);
+      await this.syncExistingImageMetadata(event.projectId, event.imageDrafts, savePlan.existingImageById);
+
+      const uploadedIdByDraftId = await this.uploadNewImages(event.projectId, event.imageDrafts);
+      const latestProject = await this.loadProjectById(event.projectId);
+      const orderedImageIds = buildOrderedImageIds(event.imageDrafts, uploadedIdByDraftId, latestProject);
+
+      await this.syncImageOrder(event.projectId, orderedImageIds);
+
+      const deletedImageIds = finalizeDeletedImageIds(savePlan.candidateDeletedImageIds, latestProject);
+
+      await this.syncHero(event.projectId, event.imageDrafts, uploadedIdByDraftId, latestProject, deletedImageIds);
+      await this.deleteRemovedImages(event.projectId, deletedImageIds);
+
+      await this.refreshProjects();
+      this.adminStatusMessage.set('Project details saved.');
+    } catch {
+      await this.refreshProjects();
+      this.errorMessage.set('Unable to save project right now.');
+      this.adminStatusMessage.set('');
+    } finally {
+      this.isSavingProjectEdit.set(false);
+    }
   }
 
   toggleProjectPublication(event: { project: Project; isPublished: boolean }): void {
@@ -166,66 +194,6 @@ export class ProjectAdminFacadeService {
     });
   }
 
-  uploadImage(event: {
-    projectId: string;
-    file: File;
-    altText: string;
-    caption: string;
-    isHero: boolean;
-  }): void {
-    this.errorMessage.set('');
-    this.adminStatusMessage.set('');
-
-    this.projectApi
-      .uploadProjectImage(event.projectId, event.file, {
-        altText: event.altText,
-        caption: event.caption,
-        isHero: event.isHero
-      })
-      .subscribe({
-        next: async () => {
-          await this.refreshProjects();
-          this.adminStatusMessage.set('Image uploaded.');
-        },
-        error: () => {
-          this.errorMessage.set('Unable to upload image right now.');
-          this.adminStatusMessage.set('');
-        }
-      });
-  }
-
-  setHero(projectId: string, image: ProjectImage): void {
-    this.projectApi.updateProjectImage(projectId, image.id, true).subscribe({
-      next: () => this.refreshProjects(),
-      error: () => {
-        this.errorMessage.set('Unable to update hero image right now.');
-      }
-    });
-  }
-
-  moveImage(projectId: string, project: Project, imageId: string, direction: -1 | 1): void {
-    const images = this.moveItemById(project.images, imageId, direction, (image) => image.id);
-    if (images === null) {
-      return;
-    }
-
-    this.projectApi.reorderProjectImages(projectId, images.map((image) => image.id)).subscribe({
-      next: () => this.refreshProjects(),
-      error: () => {
-        this.errorMessage.set('Unable to reorder images right now.');
-      }
-    });
-  }
-
-  deleteImage(projectId: string, imageId: string): void {
-    this.projectApi.deleteProjectImage(projectId, imageId).subscribe({
-      next: () => this.refreshProjects(),
-      error: () => {
-        this.errorMessage.set('Unable to delete image right now.');
-      }
-    });
-  }
-
   private markProjectPublicationPending(projectId: string, isPending: boolean): void {
     const next = new Set(this.pendingProjectPublicationUpdates());
 
@@ -238,9 +206,122 @@ export class ProjectAdminFacadeService {
     this.pendingProjectPublicationUpdates.set(next);
   }
 
-  private defaultAltText(filename: string): string {
-    const stem = filename.replace(/\.[^.]+$/, '');
-    return stem.replace(/[_-]+/g, ' ').trim() || 'Project image';
+  private async updateProjectFields(event: ProjectEditSaveRequest): Promise<void> {
+    await firstValueFrom(
+      this.projectApi.updateProject(event.projectId, {
+        title: event.title,
+        short_description: event.shortDescription,
+        long_description_md: event.longDescription,
+        type: event.type,
+        is_published: event.isPublished
+      })
+    );
+  }
+
+  private async syncExistingImageMetadata(
+    projectId: string,
+    imageDrafts: ProjectEditImageDraft[],
+    existingImageById: Map<string, { altText: string; caption?: string }>
+  ): Promise<void> {
+    for (const draft of imageDrafts) {
+      if (!draft.existingImageId || draft.file) {
+        continue;
+      }
+
+      const existing = existingImageById.get(draft.existingImageId);
+      if (!existing) {
+        continue;
+      }
+
+      const nextCaption = draft.caption.trim();
+      const nextAltText = this.resolveAltText(draft.altText, nextCaption, existing.altText, null);
+      const currentCaption = existing.caption ?? '';
+
+      if (nextAltText === existing.altText && nextCaption === currentCaption) {
+        continue;
+      }
+
+      await firstValueFrom(
+        this.projectApi.updateProjectImage(projectId, draft.existingImageId, {
+          altText: nextAltText,
+          caption: nextCaption
+        })
+      );
+    }
+  }
+
+  private async uploadNewImages(
+    projectId: string,
+    imageDrafts: ProjectEditImageDraft[]
+  ): Promise<Map<string, string>> {
+    const uploadedIdByDraftId = new Map<string, string>();
+
+    for (const draft of imageDrafts) {
+      if (!draft.file) {
+        continue;
+      }
+
+      const caption = draft.caption.trim();
+      const altText = this.resolveAltText(draft.altText, caption, null, draft.file);
+      const uploaded = await firstValueFrom(
+        this.projectApi.uploadProjectImage(projectId, draft.file, {
+          altText,
+          caption,
+          isHero: false
+        })
+      );
+
+      uploadedIdByDraftId.set(draft.draftId, uploaded.id);
+    }
+
+    return uploadedIdByDraftId;
+  }
+
+  private async syncImageOrder(projectId: string, orderedImageIds: string[]): Promise<void> {
+    if (orderedImageIds.length > 1) {
+      await firstValueFrom(this.projectApi.reorderProjectImages(projectId, orderedImageIds));
+    }
+  }
+
+  private async syncHero(
+    projectId: string,
+    imageDrafts: ProjectEditImageDraft[],
+    uploadedIdByDraftId: ReadonlyMap<string, string>,
+    latestProject: Project | null,
+    deletedImageIds: string[]
+  ): Promise<void> {
+    const heroImageId = resolveHeroImageId(imageDrafts, uploadedIdByDraftId);
+    const existingHeroImageId = latestProject?.images.find((image) => image.isHero)?.id ?? null;
+
+    if (heroImageId) {
+      await firstValueFrom(this.projectApi.updateProjectImage(projectId, heroImageId, { isHero: true }));
+      return;
+    }
+
+    if (existingHeroImageId && !deletedImageIds.includes(existingHeroImageId)) {
+      await firstValueFrom(this.projectApi.updateProjectImage(projectId, existingHeroImageId, { isHero: false }));
+    }
+  }
+
+  private async deleteRemovedImages(projectId: string, deletedImageIds: string[]): Promise<void> {
+    for (const imageId of deletedImageIds) {
+      await firstValueFrom(this.projectApi.deleteProjectImage(projectId, imageId));
+    }
+  }
+
+  private async loadProjectById(projectId: string): Promise<Project | null> {
+    const response = await firstValueFrom(this.projectApi.getProjects(undefined, this.includeUnpublished()));
+    return response.rows.find((project) => project.id === projectId) ?? null;
+  }
+
+  private resolveAltText(altText: string, caption: string, existingAltText: string | null, file: File | null): string {
+    return resolveAltTextWithCaptionFallback({
+      altText,
+      caption,
+      existingAltText,
+      filename: file?.name,
+      fallback: 'Project image'
+    });
   }
 
   private applyProjects(projects: Project[]): void {

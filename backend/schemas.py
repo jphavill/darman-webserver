@@ -303,6 +303,8 @@ class ProjectImageUploadRequest(BaseModel):
 
 class ProjectImageUpdateRequest(BaseModel):
     is_hero: bool | None = None
+    alt_text: str | None = Field(default=None, min_length=1, max_length=240)
+    caption: str | None = Field(default=None, max_length=2000)
 
 
 class AdminFeatureFlags(BaseModel):

@@ -3,7 +3,7 @@
 <article class="project-edit-modal" role="dialog" aria-modal="true" aria-label="Edit project" (click)="$event.stopPropagation()">
   <div class="project-edit-header">
     <h3>Edit {{ project.title }}</h3>
-    <button type="button" class="admin-btn secondary" (click)="close()">Close</button>
+    <button type="button" class="admin-btn secondary" [disabled]="isSaving" (click)="close()">Close</button>
   </div>
 
   @if (statusMessage) {
@@ -12,78 +12,26 @@
   @if (errorMessage) {
     <p class="page-error" role="status">{{ errorMessage }}</p>
   }
+  @if (uploadErrorMessage) {
+    <p class="page-error" role="status">{{ uploadErrorMessage }}</p>
+  }
 
-  <div class="form-grid">
-    <label class="field-block">
-      <span class="field-label">Title</span>
-      <input [(ngModel)]="editingTitle" />
-    </label>
-    <label class="field-block">
-      <span class="field-label">Type</span>
-      <select [(ngModel)]="editingType">
-        <option value="software">Software</option>
-        <option value="physical">Physical</option>
-      </select>
-    </label>
-  </div>
-
-  <label class="field-block">
-    <span class="field-label">Short description</span>
-    <textarea rows="2" [(ngModel)]="editingShort"></textarea>
-  </label>
-
-  <label class="field-block">
-    <span class="field-label">Long markdown</span>
-    <textarea rows="6" [(ngModel)]="editingLong"></textarea>
-  </label>
+  <app-project-editor-form
+    [value]="editorValue"
+    [images]="editorImages"
+    [maxImages]="12"
+    [fileInputDisabled]="editorImages.length >= 12"
+    [uploadHint]="'Choose one or more files to upload. Use Hero, Up, Down, and Delete to manage images.'"
+    (valueChange)="patchEditorValue($event)"
+    (filesSelected)="uploadImages($event)"
+    (imagePatched)="patchImage($event)"
+    (setHeroRequested)="setHero($event)"
+    (moveRequested)="moveImage($event)"
+    (deleteRequested)="deleteImage($event)"
+  ></app-project-editor-form>
 
   <div class="editor-actions">
-    <button type="button" class="admin-btn" (click)="save()">Save</button>
-    <button type="button" class="admin-btn secondary" (click)="close()">Cancel</button>
-  </div>
-
-  <div class="image-upload-card">
-    <div class="image-upload-header">
-      <h4>Images</h4>
-      <span>{{ project.images.length }} / 12</span>
-    </div>
-
-    <div class="form-grid">
-      <label class="field-block">
-        <span class="field-label">Alt text</span>
-        <input [(ngModel)]="uploadAlt" />
-      </label>
-      <label class="field-block">
-        <span class="field-label">Caption</span>
-        <input [(ngModel)]="uploadCaption" />
-      </label>
-    </div>
-
-    <label class="checkbox-row">
-      <input type="checkbox" [(ngModel)]="uploadHero" />
-      <span>Set as hero image</span>
-    </label>
-
-    <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" (change)="uploadImage($event)" [disabled]="project.images.length >= 12" />
-
-    <p class="upload-hint">If alt text is left blank, it will use the filename.</p>
-
-    <div class="admin-images">
-      @for (image of project.images; track image.id) {
-        <div class="admin-image-row">
-          <img [src]="image.thumbUrl" [alt]="image.altText" />
-          <div class="admin-image-meta">
-            <span>{{ image.isHero ? 'Hero image' : 'Gallery image' }}</span>
-            <span>{{ image.altText }}</span>
-          </div>
-          <div class="admin-image-actions">
-            <button type="button" class="admin-btn secondary small" (click)="setHero(image)">Set Hero</button>
-            <button type="button" class="admin-btn secondary small" (click)="moveImage(image.id, -1)">Up</button>
-            <button type="button" class="admin-btn secondary small" (click)="moveImage(image.id, 1)">Down</button>
-            <button type="button" class="admin-btn danger small" (click)="deleteImage(image.id)">Delete</button>
-          </div>
-        </div>
-      }
-    </div>
+    <button type="button" class="admin-btn" [disabled]="isSaving" (click)="save()">{{ isSaving ? 'Saving...' : 'Save' }}</button>
+    <button type="button" class="admin-btn secondary" [disabled]="isSaving" (click)="close()">Cancel</button>
   </div>
 </article>

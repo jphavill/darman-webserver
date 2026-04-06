@@ -205,6 +205,80 @@ def test_image_lifecycle_with_hero_toggle_and_reorder(db_session, monkeypatch):
     assert len(refreshed.rows[0].images) == 1
 
 
+def test_update_project_image_uses_caption_when_alt_text_is_whitespace(db_session, monkeypatch):
+    project = create_project(
+        db=db_session,
+        payload=ProjectCreateRequest(
+            title="Image metadata",
+            short_description="Short",
+            long_description_md="Long",
+            type="software",
+            is_published=True,
+            links=[],
+        ),
+    )
+
+    monkeypatch.setattr(
+        "services.projects._process_uploaded_image",
+        lambda *, content: {"thumb_url": "/media/projects/t.webp", "full_url": "/media/projects/f.webp"},
+    )
+
+    image = upload_project_image(
+        db=db_session,
+        project_id=project.id,
+        filename="one.jpg",
+        content=b"1",
+        payload=ProjectImageUploadRequest(alt_text="Original alt", caption="Original caption", is_hero=False),
+    )
+
+    updated = update_project_image(
+        db=db_session,
+        project_id=project.id,
+        image_id=image.id,
+        payload=ProjectImageUpdateRequest(alt_text="   ", caption="Updated caption"),
+    )
+
+    assert updated.caption == "Updated caption"
+    assert updated.alt_text == "Updated caption"
+
+
+def test_update_project_image_keeps_existing_alt_when_alt_and_caption_are_whitespace(db_session, monkeypatch):
+    project = create_project(
+        db=db_session,
+        payload=ProjectCreateRequest(
+            title="Image metadata",
+            short_description="Short",
+            long_description_md="Long",
+            type="software",
+            is_published=True,
+            links=[],
+        ),
+    )
+
+    monkeypatch.setattr(
+        "services.projects._process_uploaded_image",
+        lambda *, content: {"thumb_url": "/media/projects/t.webp", "full_url": "/media/projects/f.webp"},
+    )
+
+    image = upload_project_image(
+        db=db_session,
+        project_id=project.id,
+        filename="one.jpg",
+        content=b"1",
+        payload=ProjectImageUploadRequest(alt_text="Original alt", caption="Original caption", is_hero=False),
+    )
+
+    updated = update_project_image(
+        db=db_session,
+        project_id=project.id,
+        image_id=image.id,
+        payload=ProjectImageUpdateRequest(alt_text="   ", caption="   "),
+    )
+
+    assert updated.caption is None
+    assert updated.alt_text == "Original alt"
+
+
 def test_upload_image_rejects_more_than_12(db_session, monkeypatch):
     project = create_project(
         db=db_session,
