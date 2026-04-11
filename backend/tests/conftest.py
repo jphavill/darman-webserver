@@ -32,6 +32,7 @@ DEFAULT_TEST_POSTGRES_DB = _default_test_postgres_db(BASE_POSTGRES_DB, PYTEST_XD
 TEST_POSTGRES_DB = os.getenv("TEST_POSTGRES_DB", DEFAULT_TEST_POSTGRES_DB)
 TEST_POSTGRES_HOST = os.getenv("TEST_POSTGRES_HOST", os.getenv("POSTGRES_HOST", "localhost"))
 TEST_POSTGRES_PORT = int(os.getenv("TEST_POSTGRES_PORT", os.getenv("POSTGRES_PORT", "5432")))
+TEST_POSTGRES_SERVICE = os.getenv("TEST_POSTGRES_SERVICE", "postgres")
 TEST_BOOTSTRAP_POSTGRES = os.getenv("TEST_BOOTSTRAP_POSTGRES", "1") == "1"
 
 if not re.fullmatch(r"[A-Za-z0-9_]+", TEST_POSTGRES_DB):
@@ -41,6 +42,10 @@ if not re.fullmatch(r"[A-Za-z0-9_]+", TEST_POSTGRES_DB):
 if not TEST_POSTGRES_DB.endswith("_test"):
     raise RuntimeError(
         f"Unsafe TEST_POSTGRES_DB '{TEST_POSTGRES_DB}'. Test database names must end with '_test'."
+    )
+if not re.fullmatch(r"[A-Za-z0-9_-]+", TEST_POSTGRES_SERVICE):
+    raise RuntimeError(
+        "Invalid TEST_POSTGRES_SERVICE. Use only letters, numbers, dashes, and underscores."
     )
 
 TEST_DATABASE_URL = (
@@ -135,7 +140,7 @@ def ensure_test_database() -> Generator[None, None, None]:
     backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
     if TEST_BOOTSTRAP_POSTGRES:
-        _run("docker compose -f docker-compose.local.yml up -d postgres", cwd=repo_root)
+        _run(f"docker compose -f docker-compose.local.yml up -d {TEST_POSTGRES_SERVICE}", cwd=repo_root)
 
     _wait_for_postgres()
     _ensure_test_database()

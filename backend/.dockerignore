@@ -8,7 +8,6 @@ __pycache__/
 venv/
 .git/
 .DS_Store
-tests/
 .coverage
 htmlcov/
 test-results/

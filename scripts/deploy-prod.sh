@@ -12,8 +12,8 @@ usage() {
   printf '\n'
   printf 'Deploy flow:\n'
   printf '  1) git pull --ff-only origin main\n'
-  printf '  2) frontend tests (node:22-alpine container with cached deps)\n'
-  printf '  3) backend tests (make test SERVICE=backend with dependency hash check)\n'
+  printf '  2) frontend tests (hash-aware frontend test image)\n'
+  printf '  3) backend tests (hash-aware backend image + postgres-test)\n'
   printf '  4) postgres backup to %s\n' "$BACKUP_DIR"
   printf '  5) remove backups older than 14 days\n'
   printf '  6) render cloudflared config\n'
@@ -82,12 +82,8 @@ NPM_CACHE_DIR="${NPM_CACHE_DIR:-$REPO_ROOT/.cache/npm}"
 FRONTEND_DEPS_CACHE_ROOT="${FRONTEND_DEPS_CACHE_ROOT:-$REPO_ROOT/.cache/frontend-node_modules}"
 FRONTEND_NODE_IMAGE="${FRONTEND_NODE_IMAGE:-node:22-alpine}"
 
-prune_frontend_test_cache() {
-  run_in_dir "$REPO_ROOT" make cache-prune NPM_CACHE_DIR="$NPM_CACHE_DIR" FRONTEND_DEPS_CACHE_ROOT="$FRONTEND_DEPS_CACHE_ROOT" NPM_CACHE_TTL_DAYS="$NPM_CACHE_TTL_DAYS" FRONTEND_TEST_CACHE_TTL_DAYS="$FRONTEND_TEST_CACHE_TTL_DAYS"
-}
-
 run_frontend_tests_with_cache() {
-  run_in_dir "$REPO_ROOT" make test SERVICE=frontend FRONTEND_MODE=cached NPM_CACHE_DIR="$NPM_CACHE_DIR" FRONTEND_DEPS_CACHE_ROOT="$FRONTEND_DEPS_CACHE_ROOT" FRONTEND_NODE_IMAGE="$FRONTEND_NODE_IMAGE"
+  run_in_dir "$REPO_ROOT" make test SERVICE=frontend FRONTEND_MODE=cached COMPOSE_FILE=docker-compose.yml NPM_CACHE_DIR="$NPM_CACHE_DIR" FRONTEND_DEPS_CACHE_ROOT="$FRONTEND_DEPS_CACHE_ROOT" FRONTEND_NODE_IMAGE="$FRONTEND_NODE_IMAGE"
 }
 
 determine_build_services() {
@@ -155,7 +151,6 @@ run_in_dir "$REPO_ROOT" git pull --ff-only origin main
 POST_PULL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 
 log "Running frontend tests in Docker"
-prune_frontend_test_cache
 run_frontend_tests_with_cache
 
 log "Running backend tests"
@@ -197,9 +192,6 @@ else
   log "No backend/frontend changes detected; skipping image build"
 fi
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d --remove-orphans
-
-log "Pruning frontend test caches"
-prune_frontend_test_cache
 
 log "Deploy complete"
 printf 'Backup created: %s\n' "$FINAL_BACKUP_PATH"

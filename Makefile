@@ -1,4 +1,4 @@
-.PHONY: help up down logs rebuild migrate test deploy cache-prune _sync-backend-deps _sync-backend-image _test-backend _test-frontend
+.PHONY: help up down logs rebuild migrate test deploy cache-prune _sync-backend-deps _sync-backend-image _sync-frontend-test-image _test-backend _test-frontend
 
 COMPOSE_FILE ?= docker-compose.local.yml
 DOCKER_COMPOSE := docker compose -f $(COMPOSE_FILE)
@@ -81,15 +81,35 @@ _sync-backend-deps:
 	fi
 
 _sync-backend-image:
-	@req_hash="$$(shasum -a 256 backend/requirements.txt | cut -d ' ' -f 1)"; \
-	stored_hash="$$(cat .backend_image_requirements.sha256 2>/dev/null || true)"; \
-	image_id="$$( $(DOCKER_COMPOSE) images -q backend 2>/dev/null || true)"; \
-	if [ "$$req_hash" != "$$stored_hash" ] || [ -z "$$image_id" ]; then \
-		echo "Building backend image (requirements changed or image missing)..."; \
-		$(DOCKER_COMPOSE) build backend; \
-		printf '%s\n' "$$req_hash" > .backend_image_requirements.sha256; \
+	@head_hash="$$(git rev-parse HEAD:backend 2>/dev/null || printf 'no-head-backend')"; \
+	working_tree_hash="$$(git status --porcelain -- backend | shasum -a 256 | cut -d ' ' -f 1)"; \
+	source_hash="$$(printf '%s|%s' "$$head_hash" "$$working_tree_hash" | shasum -a 256 | cut -d ' ' -f 1)"; \
+	image_id="$$(docker image inspect --format '{{ .Id }}' darman-webserver-backend 2>/dev/null || true)"; \
+	image_hash=""; \
+	if [ -n "$$image_id" ]; then \
+		image_hash="$$(docker image inspect --format '{{ index .Config.Labels "com.exercise.backend-source-hash" }}' "$$image_id" 2>/dev/null || true)"; \
+	fi; \
+	if [ -z "$$image_id" ] || [ "$$source_hash" != "$$image_hash" ]; then \
+		echo "Building backend image (source changed or image missing)..."; \
+		$(DOCKER_COMPOSE) build --build-arg BACKEND_SOURCE_HASH="$$source_hash" backend; \
 	else \
-		echo "Backend image dependencies unchanged; skipping backend rebuild."; \
+		echo "Backend source unchanged; skipping backend rebuild."; \
+	fi
+
+_sync-frontend-test-image:
+	@head_hash="$$(git rev-parse HEAD:frontend 2>/dev/null || printf 'no-head-frontend')"; \
+	working_tree_hash="$$(git status --porcelain -- frontend | shasum -a 256 | cut -d ' ' -f 1)"; \
+	source_hash="$$(printf '%s|%s' "$$head_hash" "$$working_tree_hash" | shasum -a 256 | cut -d ' ' -f 1)"; \
+	image_id="$$(docker image inspect --format '{{ .Id }}' darman-webserver-frontend-test 2>/dev/null || true)"; \
+	image_hash=""; \
+	if [ -n "$$image_id" ]; then \
+		image_hash="$$(docker image inspect --format '{{ index .Config.Labels "com.exercise.frontend-source-hash" }}' "$$image_id" 2>/dev/null || true)"; \
+	fi; \
+	if [ -z "$$image_id" ] || [ "$$source_hash" != "$$image_hash" ]; then \
+		echo "Building frontend test image (source changed or image missing)..."; \
+		$(DOCKER_COMPOSE) --profile test build --build-arg FRONTEND_SOURCE_HASH="$$source_hash" frontend-test; \
+	else \
+		echo "Frontend source unchanged; skipping frontend test image rebuild."; \
 	fi
 
 _test-backend:
@@ -101,8 +121,8 @@ _test-backend:
 			;; \
 		container) \
 			$(MAKE) _sync-backend-image; \
-			$(DOCKER_COMPOSE) up -d postgres; \
-			$(DOCKER_COMPOSE) run --rm -e TEST_BOOTSTRAP_POSTGRES=0 -e TEST_POSTGRES_HOST=postgres backend pytest $(PYTEST_ARGS); \
+			$(DOCKER_COMPOSE) --profile test up -d postgres-test; \
+			$(DOCKER_COMPOSE) --profile test run --rm --no-deps -e TEST_BOOTSTRAP_POSTGRES=0 -e TEST_POSTGRES_HOST=postgres-test -e TEST_POSTGRES_SERVICE=postgres-test backend pytest $(PYTEST_ARGS); \
 			;; \
 		*) \
 			echo "Invalid BACKEND_MODE='$(BACKEND_MODE)'. Use container or host."; \
@@ -116,12 +136,8 @@ _test-frontend:
 			cd frontend && npm test; \
 			;; \
 		cached) \
-			$(MAKE) cache-prune; \
-			NPM_CACHE_DIR="$(NPM_CACHE_DIR)" \
-			FRONTEND_DEPS_CACHE_ROOT="$(FRONTEND_DEPS_CACHE_ROOT)" \
-			FRONTEND_NODE_IMAGE="$(FRONTEND_NODE_IMAGE)" \
-			FRONTEND_CACHE_KEY="$(FRONTEND_CACHE_KEY)" \
-			bash scripts/run-frontend-tests-cached.sh; \
+			$(MAKE) _sync-frontend-test-image; \
+			$(DOCKER_COMPOSE) --profile test run --rm frontend-test; \
 			;; \
 		*) \
 			echo "Invalid FRONTEND_MODE='$(FRONTEND_MODE)'. Use local or cached."; \

@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.7
 FROM python:3.11-slim
 
+ARG BACKEND_SOURCE_HASH=unknown
+LABEL com.exercise.backend-source-hash=$BACKEND_SOURCE_HASH
+
 WORKDIR /app
 
 COPY requirements.txt ./
