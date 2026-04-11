@@ -45,8 +45,8 @@ if [ -f node_modules/.cache_key ] && [ "$(cat node_modules/.cache_key)" = "$FRON
 fi
 
 if [ "$needs_install" -eq 1 ]; then
-  rm -rf node_modules
   mkdir -p node_modules
+  find node_modules -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   npm ci --prefer-offline --no-audit
   printf '%s\n' "$FRONTEND_CACHE_KEY" > node_modules/.cache_key
 fi
