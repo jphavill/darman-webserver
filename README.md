@@ -209,6 +209,30 @@ If you see `connection to server at "localhost", port 5432 failed: Connection re
 
 ## Running Tests
 
+Fast path from repo root:
+
+```bash
+# Runs backend pytest in backend container,
+# starts postgres if needed, and rebuilds backend image only when
+# backend/requirements.txt hash changes.
+make test-backend
+
+# Runs frontend Vitest suite.
+make test-frontend
+
+# Runs both suites.
+make test
+```
+
+`make test-backend` uses a requirements hash marker at `.backend_image_requirements.sha256`.
+It only rebuilds the backend image when `backend/requirements.txt` changes.
+
+If you want host-based backend tests with local `.venv`, use:
+
+```bash
+make test-backend-host
+```
+
 ### Backend tests (pytest)
 
 Backend tests run from `backend/` and use the root `.venv` Python environment.
@@ -218,6 +242,19 @@ Backend tests run from `backend/` and use the root `.venv` Python environment.
 source .venv/bin/activate
 cd backend
 pytest
+```
+
+If requirements changed (for example `Pillow` added), re-sync your local `.venv`:
+
+```bash
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+```
+
+You can still run the dependency sync directly:
+
+```bash
+make sync-backend-deps
 ```
 
 Run a single backend test file:

@@ -11,7 +11,7 @@ usage() {
   printf 'Deploy flow:\n'
   printf '  1) git pull --ff-only origin main\n'
   printf '  2) frontend tests (node:20-alpine container)\n'
-  printf '  3) backend tests (backend service container)\n'
+  printf '  3) backend tests (make test-backend with dependency hash check)\n'
   printf '  4) postgres backup to %s\n' "$BACKUP_DIR"
   printf '  5) remove backups older than 14 days\n'
   printf '  6) render cloudflared config\n'
@@ -82,7 +82,7 @@ if [ ! -f "$REPO_ROOT/docker-compose.yml" ]; then
   exit 1
 fi
 
-for cmd in git docker find; do
+for cmd in git docker find make; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     printf 'Missing required command: %s\n' "$cmd"
     exit 1
@@ -107,9 +107,8 @@ run_in_dir "$REPO_ROOT" git pull --ff-only origin main
 log "Running frontend tests in Docker"
 run_in_dir "$REPO_ROOT" docker run --rm -v "$REPO_ROOT/frontend:/app" -w /app node:22-alpine sh -lc "npm ci && npm test"
 
-log "Running backend tests in Docker"
-run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d postgres
-run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml run --rm -e TEST_BOOTSTRAP_POSTGRES=0 -e TEST_POSTGRES_HOST=postgres backend pytest
+log "Running backend tests"
+run_in_dir "$REPO_ROOT" make test-backend COMPOSE_FILE=docker-compose.yml
 
 log "Creating database backup"
 run_cmd mkdir -p "$BACKUP_DIR"

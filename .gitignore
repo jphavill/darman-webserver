@@ -18,3 +18,4 @@ __pycache__/
 media/*
 !media/.gitkeep
 cloudflared/config.yml
+.backend_image_requirements.sha256
