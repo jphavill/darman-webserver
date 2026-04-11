@@ -1,5 +1,6 @@
 import os
 import re
+import secrets
 import subprocess
 import time
 from collections.abc import Generator
@@ -9,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 from psycopg2 import sql
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from core.rate_limit import clear_rate_limit_state
 from core.settings import get_settings
@@ -17,7 +19,17 @@ from core.settings import get_settings
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
 BASE_POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-TEST_POSTGRES_DB = os.getenv("TEST_POSTGRES_DB", f"{BASE_POSTGRES_DB}_test")
+PYTEST_XDIST_WORKER = os.getenv("PYTEST_XDIST_WORKER", "master")
+
+
+def _default_test_postgres_db(base_postgres_db: str, worker: str) -> str:
+    if worker and worker != "master":
+        return f"{base_postgres_db}_{worker}_test"
+    return f"{base_postgres_db}_test"
+
+
+DEFAULT_TEST_POSTGRES_DB = _default_test_postgres_db(BASE_POSTGRES_DB, PYTEST_XDIST_WORKER)
+TEST_POSTGRES_DB = os.getenv("TEST_POSTGRES_DB", DEFAULT_TEST_POSTGRES_DB)
 TEST_POSTGRES_HOST = os.getenv("TEST_POSTGRES_HOST", os.getenv("POSTGRES_HOST", "localhost"))
 TEST_POSTGRES_PORT = int(os.getenv("TEST_POSTGRES_PORT", os.getenv("POSTGRES_PORT", "5432")))
 TEST_BOOTSTRAP_POSTGRES = os.getenv("TEST_BOOTSTRAP_POSTGRES", "1") == "1"
@@ -82,6 +94,41 @@ def _ensure_test_database() -> None:
         conn.close()
 
 
+def _truncate_all_tables() -> None:
+    from database import Base
+    import models  # noqa: F401
+
+    table_identifiers = []
+    for table in Base.metadata.sorted_tables:
+        if table.schema:
+            table_identifiers.append(
+                sql.SQL("{}.{}").format(sql.Identifier(table.schema), sql.Identifier(table.name))
+            )
+        else:
+            table_identifiers.append(sql.Identifier(table.name))
+
+    if not table_identifiers:
+        return
+
+    conn = psycopg2.connect(
+        host=TEST_POSTGRES_HOST,
+        port=TEST_POSTGRES_PORT,
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        dbname=TEST_POSTGRES_DB,
+    )
+    conn.autocommit = True
+
+    try:
+        with conn.cursor() as cur:
+            truncate_statement = sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                sql.SQL(", ").join(table_identifiers)
+            )
+            cur.execute(truncate_statement)
+    finally:
+        conn.close()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_database() -> Generator[None, None, None]:
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -96,56 +143,73 @@ def ensure_test_database() -> Generator[None, None, None]:
     yield
 
 
+@pytest.fixture(autouse=True)
+def clean_database() -> None:
+    # Primary isolation mechanism: full-table truncate before every test.
+    _truncate_all_tables()
+
+
 @pytest.fixture()
-def db_session() -> Generator:
-    from database import SessionLocal
+def db_session() -> Generator[Session, None, None]:
+    from database import SessionLocal, engine
 
-    session = SessionLocal()
-
-    current_db = session.execute(text("SELECT current_database()")).scalar_one()
-    if not isinstance(current_db, str) or not current_db.endswith("_test"):
-        raise RuntimeError(
-            f"Refusing to truncate non-test database '{current_db}'. Database name must end with '_test'."
-        )
-
-    session.execute(
-        text(
-            "TRUNCATE TABLE admin_sessions, project_links, project_images, projects, photos, sprint_entries, people RESTART IDENTITY CASCADE"
-        )
-    )
-    session.commit()
+    connection = engine.connect()
+    session = None
 
     try:
+        current_db = connection.execute(text("SELECT current_database()")).scalar_one()
+        if not isinstance(current_db, str) or not current_db.endswith("_test"):
+            raise RuntimeError(
+                f"Refusing to run tests against non-test database '{current_db}'. Database name must end with '_test'."
+            )
+        # Secondary safeguard for tests that use direct DB sessions.
+        session = SessionLocal(bind=connection)
         yield session
     finally:
-        session.close()
+        if session is not None:
+            session.close()
+        connection.close()
 
 
 @pytest.fixture()
-def client(db_session) -> Generator[TestClient, None, None]:
+def client(db_session: Session) -> Generator[TestClient, None, None]:
     from database import get_db
     from main import app
 
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+    def override_get_db() -> Generator[Session, None, None]:
+        yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
+    try:
+        with TestClient(app) as test_client:
+            test_client.cookies.clear()
+            yield test_client
+    finally:
+        app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture()
-def admin_auth_headers(client: TestClient):
+def admin_auth_headers(client: TestClient, db_session: Session):
+    from services.admin_sessions import create_admin_session
+
     def _get(token: str = "secret") -> dict[str, str]:
-        login = client.post("/v1/system/admin/session", json={"api_key": token})
-        assert login.status_code == 200
-        csrf = login.cookies.get("XSRF-TOKEN")
-        assert csrf
-        return {"X-XSRF-TOKEN": csrf}
+        settings = get_settings()
+        admin_api_token = os.getenv("ADMIN_API_TOKEN") or settings.admin_api_token
+        if not admin_api_token or not secrets.compare_digest(token, admin_api_token):
+            raise AssertionError("admin_auth_headers called with invalid admin token")
+
+        created = create_admin_session(db=db_session, ttl_seconds=settings.admin_session_ttl_seconds)
+        client.cookies.set(
+            settings.admin_session_cookie_name,
+            created.session_token,
+            path=settings.admin_session_cookie_path,
+        )
+        client.cookies.set(
+            settings.admin_csrf_cookie_name,
+            created.csrf_token,
+            path=settings.admin_session_cookie_path,
+        )
+        return {settings.admin_csrf_header_name: created.csrf_token}
 
     return _get
 

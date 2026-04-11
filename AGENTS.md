@@ -20,8 +20,28 @@ Guidance for agentic coding tools in `darman-webserver`.
 make up
 make down
 make rebuild
+make rebuild SERVICE=backend
+make rebuild SERVICE=frontend
 make migrate
 ``` 
+
+### Root Make test modes
+```bash
+# Run backend + frontend
+make test
+
+# Backend tests (container mode default)
+make test SERVICE=backend
+
+# Backend tests in host .venv
+make test SERVICE=backend BACKEND_MODE=host
+
+# Frontend tests (local npm default)
+make test SERVICE=frontend
+
+# Frontend tests in Docker with dependency cache
+make test SERVICE=frontend FRONTEND_MODE=cached
+```
 
 ### Backend setup (host)
 - Use the existing .venv at the root of the project for python environment

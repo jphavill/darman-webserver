@@ -4,18 +4,20 @@ set -euo pipefail
 
 DRY_RUN=0
 BACKUP_DIR="${BACKUP_DIR:-/mnt/nas/databaseBackups}"
+NPM_CACHE_TTL_DAYS="${NPM_CACHE_TTL_DAYS:-21}"
+FRONTEND_TEST_CACHE_TTL_DAYS="${FRONTEND_TEST_CACHE_TTL_DAYS:-21}"
 
 usage() {
   printf 'Usage: %s [--dry-run]\n' "$0"
   printf '\n'
   printf 'Deploy flow:\n'
   printf '  1) git pull --ff-only origin main\n'
-  printf '  2) frontend tests (node:20-alpine container)\n'
-  printf '  3) backend tests (make test-backend with dependency hash check)\n'
+  printf '  2) frontend tests (node:22-alpine container with cached deps)\n'
+  printf '  3) backend tests (make test SERVICE=backend with dependency hash check)\n'
   printf '  4) postgres backup to %s\n' "$BACKUP_DIR"
   printf '  5) remove backups older than 14 days\n'
   printf '  6) render cloudflared config\n'
-  printf '  7) docker compose down/build/up\n'
+  printf '  7) docker compose down/selective-build/up\n'
 }
 
 log() {
@@ -76,6 +78,49 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+NPM_CACHE_DIR="${NPM_CACHE_DIR:-$REPO_ROOT/.cache/npm}"
+FRONTEND_DEPS_CACHE_ROOT="${FRONTEND_DEPS_CACHE_ROOT:-$REPO_ROOT/.cache/frontend-node_modules}"
+FRONTEND_NODE_IMAGE="${FRONTEND_NODE_IMAGE:-node:22-alpine}"
+
+prune_frontend_test_cache() {
+  run_in_dir "$REPO_ROOT" make cache-prune NPM_CACHE_DIR="$NPM_CACHE_DIR" FRONTEND_DEPS_CACHE_ROOT="$FRONTEND_DEPS_CACHE_ROOT" NPM_CACHE_TTL_DAYS="$NPM_CACHE_TTL_DAYS" FRONTEND_TEST_CACHE_TTL_DAYS="$FRONTEND_TEST_CACHE_TTL_DAYS"
+}
+
+run_frontend_tests_with_cache() {
+  run_in_dir "$REPO_ROOT" make test SERVICE=frontend FRONTEND_MODE=cached NPM_CACHE_DIR="$NPM_CACHE_DIR" FRONTEND_DEPS_CACHE_ROOT="$FRONTEND_DEPS_CACHE_ROOT" FRONTEND_NODE_IMAGE="$FRONTEND_NODE_IMAGE"
+}
+
+determine_build_services() {
+  local build_frontend=0
+  local build_backend=0
+  local changed_file
+  local frontend_image_id
+  local backend_image_id
+
+  for changed_file in "$@"; do
+    [ -n "$changed_file" ] || continue
+    case "$changed_file" in
+      frontend/*)
+        build_frontend=1
+        ;;
+      backend/*)
+        build_backend=1
+        ;;
+      docker-compose.yml|docker-compose.local.yml)
+        build_frontend=1
+        build_backend=1
+        ;;
+    esac
+  done
+
+  frontend_image_id="$(docker compose -f "$REPO_ROOT/docker-compose.yml" images -q frontend 2>/dev/null || true)"
+  backend_image_id="$(docker compose -f "$REPO_ROOT/docker-compose.yml" images -q backend 2>/dev/null || true)"
+  [ -n "$frontend_image_id" ] || build_frontend=1
+  [ -n "$backend_image_id" ] || build_backend=1
+
+  [ "$build_frontend" -eq 1 ] && printf 'frontend\n'
+  [ "$build_backend" -eq 1 ] && printf 'backend\n'
+}
 
 if [ ! -f "$REPO_ROOT/docker-compose.yml" ]; then
   printf 'Could not find docker-compose.yml at repo root: %s\n' "$REPO_ROOT"
@@ -88,6 +133,9 @@ for cmd in git docker find make; do
     exit 1
   fi
 done
+
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-1}"
 
 CURRENT_BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 if [ "$CURRENT_BRANCH" != "main" ]; then
@@ -102,13 +150,16 @@ LOCAL_BACKUP_PATH="$REPO_ROOT/${BACKUP_FILE}"
 FINAL_BACKUP_PATH="$BACKUP_DIR/${BACKUP_FILE}"
 
 log "Pulling latest main"
+PRE_PULL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 run_in_dir "$REPO_ROOT" git pull --ff-only origin main
+POST_PULL_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 
 log "Running frontend tests in Docker"
-run_in_dir "$REPO_ROOT" docker run --rm -v "$REPO_ROOT/frontend:/app" -w /app node:22-alpine sh -lc "npm ci && npm test"
+prune_frontend_test_cache
+run_frontend_tests_with_cache
 
 log "Running backend tests"
-run_in_dir "$REPO_ROOT" make test-backend COMPOSE_FILE=docker-compose.yml
+run_in_dir "$REPO_ROOT" make test SERVICE=backend COMPOSE_FILE=docker-compose.yml
 
 log "Creating database backup"
 run_cmd mkdir -p "$BACKUP_DIR"
@@ -123,10 +174,32 @@ run_cmd find "$BACKUP_DIR" -maxdepth 1 -type f -name 'data_backup_*.dump' -mtime
 log "Rendering cloudflared config"
 run_in_dir "$REPO_ROOT" bash scripts/render-cloudflared-config.sh
 
+BUILD_SERVICES=()
+CHANGED_FILES=()
+if [ "$PRE_PULL_SHA" != "$POST_PULL_SHA" ]; then
+  while IFS= read -r changed_file; do
+    [ -n "$changed_file" ] || continue
+    CHANGED_FILES+=("$changed_file")
+  done < <(git -C "$REPO_ROOT" diff --name-only "$PRE_PULL_SHA" "$POST_PULL_SHA")
+fi
+
+while IFS= read -r service; do
+  [ -n "$service" ] || continue
+  BUILD_SERVICES+=("$service")
+done < <(determine_build_services "${CHANGED_FILES[@]}")
+
 log "Deploying production stack"
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml down
-run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml build
+if [ "${#BUILD_SERVICES[@]}" -gt 0 ]; then
+  log "Building updated services: ${BUILD_SERVICES[*]}"
+  run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml build --parallel "${BUILD_SERVICES[@]}"
+else
+  log "No backend/frontend changes detected; skipping image build"
+fi
 run_in_dir "$REPO_ROOT" docker compose -f docker-compose.yml up -d --remove-orphans
+
+log "Pruning frontend test caches"
+prune_frontend_test_cache
 
 log "Deploy complete"
 printf 'Backup created: %s\n' "$FINAL_BACKUP_PATH"

@@ -155,26 +155,35 @@ Render `cloudflared/config.yml` from `cloudflared/config.template.yml` before st
 ## Common Commands
 
 ```bash
+# Show available make targets and options
+make help
+
 # Start services
-docker compose -f docker-compose.local.yml up -d
+make up
 
 # View logs
-docker compose -f docker-compose.local.yml logs -f
+make logs
 
 # Stop services
-docker compose -f docker-compose.local.yml down
+make down
 
 # Rebuild after code changes
-docker compose -f docker-compose.local.yml up -d --build
-
-# Bring stack up without rebuilding
-docker compose -f docker-compose.local.yml up -d
+make rebuild
 
 # Rebuild only backend
-docker compose -f docker-compose.local.yml up -d --build backend
+make rebuild SERVICE=backend
 
 # Rebuild only frontend
-docker compose -f docker-compose.local.yml up -d --build frontend
+make rebuild SERVICE=frontend
+
+# Run all tests (defaults: backend in container, frontend local)
+make test
+
+# Backend tests in host .venv
+make test SERVICE=backend BACKEND_MODE=host
+
+# Frontend tests in Docker with dependency cache
+make test SERVICE=frontend FRONTEND_MODE=cached
 
 # View running containers
 docker ps
@@ -212,26 +221,27 @@ If you see `connection to server at "localhost", port 5432 failed: Connection re
 Fast path from repo root:
 
 ```bash
-# Runs backend pytest in backend container,
-# starts postgres if needed, and rebuilds backend image only when
-# backend/requirements.txt hash changes.
-make test-backend
-
-# Runs frontend Vitest suite.
-make test-frontend
-
-# Runs both suites.
+# Runs backend + frontend suites.
 make test
+
+# Backend in container mode (default backend mode).
+make test SERVICE=backend
+
+# Backend in host .venv mode.
+make test SERVICE=backend BACKEND_MODE=host
+
+# Frontend local npm mode (default frontend mode).
+make test SERVICE=frontend
+
+# Frontend cached Docker mode.
+make test SERVICE=frontend FRONTEND_MODE=cached
 ```
 
-`make test-backend` uses a requirements hash marker at `.backend_image_requirements.sha256`.
+`make test SERVICE=backend` in container mode uses a requirements hash marker at `.backend_image_requirements.sha256`.
 It only rebuilds the backend image when `backend/requirements.txt` changes.
 
-If you want host-based backend tests with local `.venv`, use:
-
-```bash
-make test-backend-host
-```
+`backend/.dockerignore` excludes `tests/` so the runtime backend image stays smaller.
+Backend tests run from source code (host `.venv` with `BACKEND_MODE=host`, or bind-mounted source in the backend test container with `BACKEND_MODE=container`), not from tests copied into the runtime image.
 
 ### Backend tests (pytest)
 
@@ -251,11 +261,7 @@ source .venv/bin/activate
 python -m pip install -r backend/requirements.txt
 ```
 
-You can still run the dependency sync directly:
-
-```bash
-make sync-backend-deps
-```
+Backend dependency/image sync is handled automatically by `make test SERVICE=backend` based on `BACKEND_MODE`.
 
 Run a single backend test file:
 
@@ -308,6 +314,8 @@ Backend pytest uses a dedicated test database and will refuse destructive test s
 
 - Default test DB name: `${POSTGRES_DB}_test` (for example, `postgres_test`)
 - Override with: `TEST_POSTGRES_DB=<name_that_ends_in__test>`
+- Primary isolation: truncate all mapped tables before each test.
+- Secondary safeguard: tests that request `db_session` still verify they are connected to a `_test` database.
 
 This prevents local development data from being truncated during test runs.
 
@@ -334,6 +342,20 @@ docker volume ls
 docker volume rm darman-webserver_postgres_data
 docker compose up -d postgres
 ```
+
+## Deploy cache knobs
+
+`scripts/deploy-prod.sh` and `make test SERVICE=frontend FRONTEND_MODE=cached` share frontend dependency caches under `.cache/`.
+
+- `NPM_CACHE_TTL_DAYS` (default `21`): prunes old npm artifact files from `.cache/npm`.
+- `FRONTEND_TEST_CACHE_TTL_DAYS` (default `21`): prunes old dependency snapshots from `.cache/frontend-node_modules`.
+- `FRONTEND_NODE_IMAGE` (default `node:22-alpine`): single source of truth for the frontend test container image and cache keying.
+
+Safe override guidance:
+- Keep `FRONTEND_NODE_IMAGE` pinned to a specific major/minor tag used by your project.
+- Lower TTL values if disk space is tight; increase only if deploy hosts are stable and frequently run frontend tests.
+- Prefer one-off overrides per command (for example `FRONTEND_NODE_IMAGE=node:22-alpine make test SERVICE=frontend FRONTEND_MODE=cached`) over editing defaults in scripts.
+
 ## Makefile Shortcuts
 
 Use these shortcuts for the same local Docker workflows:
@@ -352,8 +374,11 @@ make down
 make rebuild
 
 # Rebuild backend only
-make rebuild-backend
+make rebuild SERVICE=backend
 
 # Rebuild frontend only
-make rebuild-frontend
+make rebuild SERVICE=frontend
+
+# Prune frontend test caches
+make cache-prune
 ```
