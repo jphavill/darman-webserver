@@ -103,7 +103,84 @@ describe('HomePageComponent', () => {
     });
 
     expect(component.activeProjectMarkdown.includes('<p>Should not render</p>')).toBe(false);
+    expect(component.activeProjectMarkdown.includes('&lt;p&gt;Should not render&lt;/p&gt;')).toBe(true);
     expect(component.activeProjectMarkdown.includes('Safe markdown')).toBe(true);
+  });
+
+  it('replaces image placeholders with project image markup', () => {
+    TestBed.configureTestingModule({
+      providers: [AdminAuthStateService, { provide: ProjectApiService, useValue: buildProjectApiMock() }]
+    });
+
+    const component = TestBed.runInInjectionContext(() => new HomePageComponent());
+    const trigger = document.createElement('button');
+    trigger.getBoundingClientRect = () => new DOMRect(0, 0, 120, 80);
+
+    component.openProject({
+      trigger,
+      project: {
+        id: 'image-placeholder-test',
+        title: 'Image Test',
+        shortDescription: 'Short',
+        longDescription: 'Lead text [image:image-1 align=right caption="Inline caption" width=280] tail text',
+        images: [
+          {
+            id: 'image-1',
+            thumbUrl: '/media/thumb.webp',
+            fullUrl: '/media/full.webp',
+            altText: 'Inline alt',
+            caption: 'Default caption',
+            sortOrder: 0,
+            isHero: false,
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01'
+          }
+        ],
+        tags: [],
+        links: [],
+        type: 'software',
+        isPublished: true,
+        sortOrder: 0,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01'
+      }
+    });
+
+    expect(component.activeProjectMarkdown).toContain('<figure class="md-image md-image-right" style="max-width: 280px;">');
+    expect(component.activeProjectMarkdown).toContain('<img src="/media/full.webp" alt="Inline alt" loading="lazy" />');
+    expect(component.activeProjectMarkdown).toContain('<figcaption>Inline caption</figcaption>');
+  });
+
+  it('removes placeholders when image key is missing', () => {
+    TestBed.configureTestingModule({
+      providers: [AdminAuthStateService, { provide: ProjectApiService, useValue: buildProjectApiMock() }]
+    });
+
+    const component = TestBed.runInInjectionContext(() => new HomePageComponent());
+    const trigger = document.createElement('button');
+    trigger.getBoundingClientRect = () => new DOMRect(0, 0, 120, 80);
+
+    component.openProject({
+      trigger,
+      project: {
+        id: 'missing-image-test',
+        title: 'Missing Image Test',
+        shortDescription: 'Short',
+        longDescription: 'Before [image:not-found] after',
+        images: [],
+        tags: [],
+        links: [],
+        type: 'software',
+        isPublished: true,
+        sortOrder: 0,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01'
+      }
+    });
+
+    expect(component.activeProjectMarkdown).toContain('Before  after');
+    expect(component.activeProjectMarkdown).not.toContain('[image:not-found]');
+    expect(component.activeProjectMarkdown).not.toContain('<figure');
   });
 
   it('removes overlay-open body class on destroy', () => {

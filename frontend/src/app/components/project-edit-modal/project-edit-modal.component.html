@@ -1,9 +1,12 @@
-<div class="project-edit-backdrop" (click)="close()"></div>
+<div class="project-edit-backdrop"></div>
 
 <article class="project-edit-modal" role="dialog" aria-modal="true" aria-label="Edit project" (click)="$event.stopPropagation()">
   <div class="project-edit-header">
     <h3>Edit {{ project.title }}</h3>
-    <button type="button" class="admin-btn secondary" [disabled]="isSaving" (click)="close()">Close</button>
+    <div class="project-top-buttons">
+      <button type="button" class="admin-btn" [disabled]="isSaving" (click)="save()">{{ isSaving ? 'Saving...' : 'Save' }}</button>
+      <button type="button" class="admin-btn secondary" [disabled]="isSaving" (click)="close()">Cancel</button>
+    </div>
   </div>
 
   @if (statusMessage) {

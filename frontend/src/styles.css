@@ -20,6 +20,85 @@ body.overlay-open {
   overflow: hidden;
 }
 
+.project-markdown {
+  color: var(--text);
+}
+
+.project-markdown h2,
+.project-markdown h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  border: 0;
+  margin: 1rem 0 0.5rem;
+  padding: 0;
+}
+
+.project-markdown p,
+.project-markdown li {
+  color: var(--text-soft);
+}
+
+.project-markdown ul {
+  padding-left: 1.2rem;
+}
+
+.project-markdown::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.project-markdown .md-image {
+  margin: 0.4rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+
+.project-markdown .md-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.project-markdown .md-image figcaption {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.84rem;
+  color: var(--text-soft);
+  border-top: 1px solid var(--border);
+}
+
+.project-markdown .md-image-left {
+  float: left;
+  width: min(48%, 320px);
+  margin: 0.2rem 1rem 0.9rem 0;
+}
+
+.project-markdown .md-image-right {
+  float: right;
+  width: min(48%, 320px);
+  margin: 0.2rem 0 0.9rem 1rem;
+}
+
+.project-markdown .md-image-full {
+  clear: both;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .project-markdown .md-image,
+  .project-markdown .md-image-left,
+  .project-markdown .md-image-right,
+  .project-markdown .md-image-full {
+    float: none;
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0.25rem 0 0.9rem;
+    clear: both;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

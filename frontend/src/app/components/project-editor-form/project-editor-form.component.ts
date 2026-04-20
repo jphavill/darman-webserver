@@ -33,6 +33,8 @@ export interface ProjectEditorImagePatchEvent {
   styleUrls: ['./project-editor-form.component.css']
 })
 export class ProjectEditorFormComponent {
+  readonly imageTokenAlignExample = '[image:<image-id> align=right width=320 caption="Short caption"]';
+
   @Input({ required: true }) value!: ProjectEditorFormValue;
   @Input({ required: true }) images: ProjectEditorImageItem[] = [];
   @Input() maxImages = 12;
@@ -81,5 +83,9 @@ export class ProjectEditorFormComponent {
 
   requestDelete(imageId: string): void {
     this.deleteRequested.emit(imageId);
+  }
+
+  buildImageToken(imageId: string): string {
+    return `[image:${imageId}]`;
   }
 }

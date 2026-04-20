@@ -19,7 +19,7 @@
     [attr.aria-pressed]="value.isPublished"
     (click)="patchValue({ isPublished: !value.isPublished })"
   >
-    Publish
+    Published
   </button>
 </div>
 
@@ -50,6 +50,10 @@
   </div>
 
   <p class="upload-hint">{{ uploadHint }}</p>
+  <p class="image-token-help">Place tokens in Long markdown to position images inline.</p>
+  <p class="image-token-help examples">
+    <code>{{ imageTokenAlignExample }}</code>
+  </p>
 
   @if (images.length > 0) {
     <div class="admin-images">
@@ -63,6 +67,11 @@
             <label class="field-block queue-caption-field">
               <span class="field-label">Caption</span>
               <input [ngModel]="image.caption" (ngModelChange)="patchImage(image.id, { caption: $event })" />
+            </label>
+
+            <label class="field-block token-field">
+              <span class="field-label">Placeholder token</span>
+              <input class="token-input" [value]="buildImageToken(image.id)" readonly (focus)="$any($event.target).select()" />
             </label>
 
             <div class="queue-alt-actions-row">

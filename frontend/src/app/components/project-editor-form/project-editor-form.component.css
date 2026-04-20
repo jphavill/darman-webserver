@@ -20,6 +20,35 @@
   padding-block: 0.35rem;
 }
 
+.image-token-help {
+  margin: 0.2rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.image-token-help.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.image-token-help code {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong-soft);
+  padding: 0.2rem 0.45rem;
+}
+
+.token-field {
+  margin-top: 0.5rem;
+}
+
+.token-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  color: var(--text-strong-soft);
+}
+
 .queue-alt-actions-row {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) auto;

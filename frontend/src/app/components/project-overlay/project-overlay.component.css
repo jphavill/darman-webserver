@@ -85,43 +85,6 @@
   margin-bottom: 0.9rem;
 }
 
-.expanded-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 0.45rem;
-  margin-bottom: 0.85rem;
-}
-
-.expanded-gallery img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.markdown {
-  color: var(--text);
-}
-
-.markdown h2,
-.markdown h3 {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  border: 0;
-  margin: 1rem 0 0.5rem;
-  padding: 0;
-}
-
-.markdown p,
-.markdown li {
-  color: var(--text-soft);
-}
-
-.markdown ul {
-  padding-left: 1.2rem;
-}
-
 .expanded-links {
   display: flex;
   flex-wrap: wrap;

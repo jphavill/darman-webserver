@@ -1,6 +1,4 @@
-import { Component, DOCUMENT, HostListener, OnDestroy, SecurityContext, ViewChild, computed, inject, signal } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
-import { marked } from 'marked';
+import { Component, DOCUMENT, HostListener, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
 import { ProjectCreatePanelComponent, ProjectCreateRequestedEvent } from '../../components/project-create-panel/project-create-panel.component';
 import {
   ProjectEditModalComponent,
@@ -13,6 +11,7 @@ import { ProjectSectionComponent } from '../../components/project-section/projec
 import { WINDOW } from '../../core/browser/browser-globals';
 import { Project, ProjectOpenRequest } from '../../models/project.model';
 import { ProjectAdminFacadeService } from '../../services/project-admin-facade.service';
+import { preprocessProjectMarkdown } from '../../shared/markdown/project-markdown-preprocessor';
 
 @Component({
   selector: 'app-home-page',
@@ -28,7 +27,6 @@ import { ProjectAdminFacadeService } from '../../services/project-admin-facade.s
   styleUrls: ['./home-page.component.css']
 })
 export class HomePageComponent implements OnDestroy {
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly window = inject(WINDOW);
   private readonly document = inject(DOCUMENT);
   private readonly projectAdmin = inject(ProjectAdminFacadeService);
@@ -67,7 +65,7 @@ export class HomePageComponent implements OnDestroy {
     this.openTrigger = request.trigger;
     this.originRect = request.trigger.getBoundingClientRect();
     this.activeProject = request.project;
-    this.activeProjectMarkdown = this.markdownToHtml(request.project.longDescription);
+    this.activeProjectMarkdown = preprocessProjectMarkdown(request.project.longDescription, request.project.images);
     this.overlayVisible = true;
     this.isExpanded = false;
     this.expandedStyle = this.rectToStyle(this.originRect, false);
@@ -195,13 +193,6 @@ export class HomePageComponent implements OnDestroy {
     if (target) {
       this.startEdit(target);
     }
-  }
-
-  private markdownToHtml(markdown: string): string {
-    const renderer = new marked.Renderer();
-    renderer.html = () => '';
-    const html = marked.parse(markdown, { renderer, gfm: true }) as string;
-    return this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
   }
 
   private rectToStyle(rect: DOMRect, withTransition: boolean): Record<string, string> {
